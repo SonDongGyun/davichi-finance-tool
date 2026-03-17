@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, Filter, ArrowUpRight, ArrowDownRight, Plus, Minus, Search } from 'lucide-react';
 import { formatMoney, formatMonthLabel } from '../utils/excelParser';
