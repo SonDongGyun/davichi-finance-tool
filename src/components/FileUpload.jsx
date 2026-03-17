@@ -51,7 +51,7 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.2 }}
-      className="relative z-10 max-w-3xl mx-auto"
+      className="relative z-10 max-w-4xl mx-auto"
     >
       <div
         onDrop={handleDrop}
@@ -59,7 +59,7 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
         onDragLeave={handleDragLeave}
         onClick={() => !isLoaded && document.getElementById('file-input').click()}
         className={`
-          relative rounded-2xl p-10 text-center cursor-pointer
+          relative rounded-2xl p-14 text-center cursor-pointer
           transition-all duration-500 ease-out
           ${isDragging
             ? 'glass border-2 border-blue-400 scale-[1.02] shadow-lg shadow-blue-500/20'
@@ -139,13 +139,13 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
                 animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
               >
-                <Upload className="w-12 h-12 text-blue-400" />
+                <Upload className="w-16 h-16 text-blue-400" />
               </motion.div>
               <div>
-                <p className="text-lg font-medium text-slate-200">
+                <p className="text-xl font-semibold text-slate-200">
                   재무 데이터 엑셀 파일을 업로드하세요
                 </p>
-                <p className="text-sm text-slate-400 mt-2">
+                <p className="text-base text-slate-400 mt-3">
                   드래그 앤 드롭 또는 클릭하여 파일 선택 (.xlsx, .xls, .csv)
                 </p>
               </div>

@@ -64,7 +64,7 @@ function App() {
       <div className="bg-particles" />
 
       <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', padding: '0 24px' }}>
-        <Header />
+        <Header isCompact={step !== 'upload'} />
 
         <main className="w-full pb-16">
           <FileUpload
