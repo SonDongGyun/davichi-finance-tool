@@ -59,12 +59,12 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen w-full relative">
       <div className="bg-particles" />
 
       <Header />
 
-      <main className="pb-16">
+      <main className="w-full pb-16">
         <FileUpload
           onFileLoaded={handleFileLoaded}
           isLoaded={!!fileData}
