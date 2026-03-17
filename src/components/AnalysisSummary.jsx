@@ -2,11 +2,8 @@ import { motion } from 'framer-motion';
 import { MessageSquareText, TrendingUp, TrendingDown, PlusCircle, MinusCircle, AlertCircle } from 'lucide-react';
 import { formatMoney, formatMonthLabel } from '../utils/excelParser';
 
-function formatManWon(amount) {
-  const abs = Math.abs(amount);
-  if (abs >= 100000000) return `${(abs / 100000000).toFixed(1)}억`;
-  if (abs >= 10000) return `${Math.round(abs / 10000)}만`;
-  return formatMoney(abs);
+function fmt(amount) {
+  return formatMoney(Math.abs(amount));
 }
 
 function generateSummaryLines(result) {
@@ -16,38 +13,38 @@ function generateSummaryLines(result) {
 
   const totalDiff = result.totalDiff;
   if (totalDiff > 0) {
-    lines.push({ type: 'increase', text: `${m1Label} 대비 ${m2Label} 총 비용이 ${formatManWon(totalDiff)}원 증가했습니다 (${result.totalPctChange > 0 ? '+' : ''}${result.totalPctChange}%).` });
+    lines.push({ type: 'increase', text: `${m1Label} 대비 ${m2Label} 총 비용이 ${fmt(totalDiff)}원 증가했습니다 (${result.totalPctChange > 0 ? '+' : ''}${result.totalPctChange}%).` });
   } else if (totalDiff < 0) {
-    lines.push({ type: 'decrease', text: `${m1Label} 대비 ${m2Label} 총 비용이 ${formatManWon(totalDiff)}원 감소했습니다 (${result.totalPctChange}%).` });
+    lines.push({ type: 'decrease', text: `${m1Label} 대비 ${m2Label} 총 비용이 ${fmt(totalDiff)}원 감소했습니다 (${result.totalPctChange}%).` });
   } else {
     lines.push({ type: 'neutral', text: `${m1Label}과 ${m2Label}의 총 비용이 동일합니다.` });
   }
 
   result.removedItems.forEach(item => {
-    lines.push({ type: 'removed', text: `당월 ${item.category} 비용 ${formatManWon(item.prevAmount)}원 감소 (${m1Label}에는 있었으나 ${m2Label}에는 발생하지 않음).` });
+    lines.push({ type: 'removed', text: `당월 ${item.category} 비용 ${fmt(item.prevAmount)}원 감소 (${m1Label}에는 있었으나 ${m2Label}에는 발생하지 않음).` });
   });
 
   result.newItems.forEach(item => {
-    lines.push({ type: 'new', text: `${item.category} 항목이 ${m2Label}에 신규 발생하여 ${formatManWon(item.currAmount)}원 지출.` });
+    lines.push({ type: 'new', text: `${item.category} 항목이 ${m2Label}에 신규 발생하여 ${fmt(item.currAmount)}원 지출.` });
   });
 
-  result.increasedItems.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).slice(0, 5).forEach(item => {
-    lines.push({ type: 'increase', text: `${item.category} 비용이 ${formatManWon(item.prevAmount)}원에서 ${formatManWon(item.currAmount)}원으로 ${formatManWon(item.diff)}원 증가 (+${item.pctChange}%).` });
+  result.increasedItems.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).forEach(item => {
+    lines.push({ type: 'increase', text: `${item.category} 비용이 ${fmt(item.prevAmount)}원에서 ${fmt(item.currAmount)}원으로 ${fmt(item.diff)}원 증가 (+${item.pctChange}%).` });
   });
 
-  result.decreasedItems.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).slice(0, 5).forEach(item => {
-    lines.push({ type: 'decrease', text: `${item.category} 비용이 ${formatManWon(item.prevAmount)}원에서 ${formatManWon(item.currAmount)}원으로 ${formatManWon(Math.abs(item.diff))}원 감소 (${item.pctChange}%).` });
+  result.decreasedItems.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).forEach(item => {
+    lines.push({ type: 'decrease', text: `${item.category} 비용이 ${fmt(item.prevAmount)}원에서 ${fmt(item.currAmount)}원으로 ${fmt(Math.abs(item.diff))}원 감소 (${item.pctChange}%).` });
   });
 
-  result.vendorComparison.slice(0, 3).forEach(v => {
+  result.vendorComparison.forEach(v => {
     if (v.status === 'new') {
-      lines.push({ type: 'new', text: `거래처 "${v.vendor}" 신규 거래 발생, ${formatManWon(v.currAmount)}원 지출.` });
+      lines.push({ type: 'new', text: `거래처 "${v.vendor}" 신규 거래 발생, ${fmt(v.currAmount)}원 지출.` });
     } else if (v.status === 'removed') {
-      lines.push({ type: 'removed', text: `거래처 "${v.vendor}" 당월 거래 없음 (전월 ${formatManWon(v.prevAmount)}원).` });
+      lines.push({ type: 'removed', text: `거래처 "${v.vendor}" 당월 거래 없음 (전월 ${fmt(v.prevAmount)}원).` });
     } else if (v.diff > 0) {
-      lines.push({ type: 'increase', text: `거래처 "${v.vendor}" 비용 ${formatManWon(v.diff)}원 증가.` });
+      lines.push({ type: 'increase', text: `거래처 "${v.vendor}" 비용 ${fmt(v.diff)}원 증가.` });
     } else if (v.diff < 0) {
-      lines.push({ type: 'decrease', text: `거래처 "${v.vendor}" 비용 ${formatManWon(Math.abs(v.diff))}원 감소.` });
+      lines.push({ type: 'decrease', text: `거래처 "${v.vendor}" 비용 ${fmt(Math.abs(v.diff))}원 감소.` });
     }
   });
 
