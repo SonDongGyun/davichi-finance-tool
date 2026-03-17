@@ -84,7 +84,7 @@ export default function SummaryCards({ result }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="relative z-10 max-w-7xl mx-auto px-6 mt-10"
+      className="relative z-10 px-6 mt-10"
     >
       {/* Main summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
