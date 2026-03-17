@@ -51,29 +51,42 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.2 }}
-      className="relative z-10 max-w-4xl mx-auto"
+      style={{
+        position: 'relative', zIndex: 10,
+        maxWidth: '720px',
+        margin: '0 auto',
+      }}
     >
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => !isLoaded && document.getElementById('file-input').click()}
-        className={`
-          relative rounded-2xl p-14 text-center cursor-pointer
-          transition-all duration-500 ease-out
-          ${isDragging
-            ? 'glass border-2 border-blue-400 scale-[1.02] shadow-lg shadow-blue-500/20'
+        className={
+          isDragging
+            ? 'glass'
             : isLoaded
-              ? 'glass border border-emerald-500/30'
-              : 'glass border-2 border-dashed border-slate-500/30 upload-pulse hover:border-blue-400/50 hover:shadow-lg hover:shadow-blue-500/10'
-          }
-        `}
+              ? 'glass'
+              : 'glass upload-pulse'
+        }
+        style={{
+          borderRadius: '20px',
+          padding: '56px 40px',
+          textAlign: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.5s ease-out',
+          border: isDragging
+            ? '2px solid #60a5fa'
+            : isLoaded
+              ? '1px solid rgba(16,185,129,0.3)'
+              : '2px dashed rgba(100,116,139,0.3)',
+        }}
       >
         <input
           id="file-input"
           type="file"
           accept=".xlsx,.xls,.csv"
-          className="hidden"
+          style={{ display: 'none' }}
           onChange={(e) => handleFile(e.target.files[0])}
         />
 
@@ -84,16 +97,16 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="flex flex-col items-center gap-4"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}
             >
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               >
-                <Loader2 className="w-12 h-12 text-blue-400" />
+                <Loader2 style={{ width: '48px', height: '48px', color: '#60a5fa' }} />
               </motion.div>
-              <p className="text-slate-300 font-medium">파일 분석 중...</p>
-              <p className="text-sm text-slate-500">{fileName}</p>
+              <p style={{ color: '#cbd5e1', fontWeight: 500, fontSize: '16px' }}>파일 분석 중...</p>
+              <p style={{ fontSize: '14px', color: '#64748b' }}>{fileName}</p>
             </motion.div>
           ) : isLoaded ? (
             <motion.div
@@ -101,19 +114,19 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="flex flex-col items-center gap-4"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}
             >
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 200, damping: 10 }}
               >
-                <CheckCircle2 className="w-12 h-12 text-emerald-400" />
+                <CheckCircle2 style={{ width: '48px', height: '48px', color: '#34d399' }} />
               </motion.div>
               <div>
-                <p className="text-emerald-300 font-medium">파일 로드 완료</p>
-                <p className="text-sm text-slate-400 mt-1 flex items-center justify-center gap-2">
-                  <FileSpreadsheet className="w-4 h-4" />
+                <p style={{ color: '#6ee7b7', fontWeight: 500, fontSize: '16px' }}>파일 로드 완료</p>
+                <p style={{ fontSize: '14px', color: '#94a3b8', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <FileSpreadsheet style={{ width: '16px', height: '16px' }} />
                   {fileName}
                 </p>
               </div>
@@ -122,7 +135,11 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
                   e.stopPropagation();
                   document.getElementById('file-input').click();
                 }}
-                className="mt-2 px-4 py-2 rounded-lg text-sm bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 transition-colors"
+                style={{
+                  marginTop: '8px', padding: '8px 16px', borderRadius: '8px',
+                  fontSize: '14px', background: 'rgba(51,65,85,0.5)', color: '#cbd5e1',
+                  border: 'none', cursor: 'pointer',
+                }}
               >
                 다른 파일 업로드
               </button>
@@ -133,19 +150,19 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center gap-4"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}
             >
               <motion.div
                 animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
               >
-                <Upload className="w-16 h-16 text-blue-400" />
+                <Upload style={{ width: '56px', height: '56px', color: '#60a5fa' }} />
               </motion.div>
               <div>
-                <p className="text-xl font-semibold text-slate-200">
+                <p style={{ fontSize: '20px', fontWeight: 600, color: '#e2e8f0' }}>
                   재무 데이터 엑셀 파일을 업로드하세요
                 </p>
-                <p className="text-base text-slate-400 mt-3">
+                <p style={{ fontSize: '15px', color: '#94a3b8', marginTop: '12px' }}>
                   드래그 앤 드롭 또는 클릭하여 파일 선택 (.xlsx, .xls, .csv)
                 </p>
               </div>
@@ -159,9 +176,12 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mt-4 flex items-center justify-center gap-2 text-red-400 text-sm"
+              style={{
+                marginTop: '20px', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', gap: '8px', color: '#f87171', fontSize: '14px',
+              }}
             >
-              <AlertCircle className="w-4 h-4" />
+              <AlertCircle style={{ width: '16px', height: '16px' }} />
               {error}
             </motion.div>
           )}

@@ -128,3 +128,9 @@ body {
   background: rgba(99, 102, 241, 0.1) !important;
   transform: translateX(4px);
 }
+
+@media (max-width: 768px) {
+  .feature-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

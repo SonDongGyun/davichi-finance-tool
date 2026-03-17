@@ -60,13 +60,22 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen w-full relative">
+    <div style={{ minHeight: '100vh', width: '100%', position: 'relative' }}>
       <div className="bg-particles" />
 
-      <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', padding: '0 24px' }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '1200px',
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        paddingLeft: '32px',
+        paddingRight: '32px',
+        position: 'relative',
+        zIndex: 1,
+      }}>
         <Header isCompact={step !== 'upload'} />
 
-        <main className="w-full pb-16">
+        <main style={{ width: '100%', paddingBottom: '64px' }}>
           <FileUpload
             onFileLoaded={handleFileLoaded}
             isLoaded={!!fileData}
@@ -90,26 +99,30 @@ function App() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="relative z-10 max-w-3xl mx-auto mt-6"
+                  style={{
+                    position: 'relative', zIndex: 10,
+                    maxWidth: '720px', marginLeft: 'auto', marginRight: 'auto',
+                    marginTop: '24px',
+                  }}
                 >
-                  <div className="glass-light rounded-xl p-4">
-                    <p className="text-sm text-slate-400 mb-3">
+                  <div className="glass-light" style={{ borderRadius: '16px', padding: '20px' }}>
+                    <p style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '12px' }}>
                       데이터 미리보기 (총 {fileData.totalRows}행)
                     </p>
-                    <div className="overflow-x-auto text-xs">
-                      <table className="w-full">
+                    <div style={{ overflowX: 'auto', fontSize: '12px' }}>
+                      <table style={{ width: '100%' }}>
                         <thead>
-                          <tr className="border-b border-slate-700/30">
+                          <tr style={{ borderBottom: '1px solid rgba(51,65,85,0.3)' }}>
                             {fileData.headers.slice(0, 8).map(h => (
-                              <th key={h} className="py-2 px-3 text-left text-slate-400 font-medium whitespace-nowrap">{h}</th>
+                              <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: '#94a3b8', fontWeight: 500, whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {fileData.rows.slice(0, 5).map((row, i) => (
-                            <tr key={i} className="border-b border-slate-800/20">
+                            <tr key={i} style={{ borderBottom: '1px solid rgba(15,23,42,0.2)' }}>
                               {fileData.headers.slice(0, 8).map(h => (
-                                <td key={h} className="py-2 px-3 text-slate-300 whitespace-nowrap max-w-[150px] truncate">
+                                <td key={h} style={{ padding: '8px 12px', color: '#cbd5e1', whiteSpace: 'nowrap', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {String(row[h] || '')}
                                 </td>
                               ))}
@@ -149,12 +162,16 @@ function App() {
                 exit={{ opacity: 0 }}
               >
                 {/* Back button */}
-                <div className="relative z-10 mt-6">
+                <div style={{ position: 'relative', zIndex: 10, marginTop: '24px' }}>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleReset}
-                    className="px-4 py-2 rounded-lg text-sm bg-slate-700/40 hover:bg-slate-600/40 text-slate-300 transition-colors"
+                    style={{
+                      padding: '8px 16px', borderRadius: '8px', fontSize: '14px',
+                      background: 'rgba(51,65,85,0.4)', color: '#cbd5e1',
+                      border: 'none', cursor: 'pointer',
+                    }}
                   >
                     ← 다른 월 비교하기
                   </motion.button>
@@ -170,7 +187,11 @@ function App() {
           </AnimatePresence>
 
           {/* Footer */}
-          <footer className="relative z-10 text-center py-8 text-sm text-slate-500">
+          <footer style={{
+            position: 'relative', zIndex: 10,
+            textAlign: 'center', padding: '40px 0',
+            fontSize: '14px', color: '#64748b',
+          }}>
             <p>다비치 재무팀 분석 툴 &copy; {new Date().getFullYear()}</p>
           </footer>
         </main>
