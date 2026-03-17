@@ -122,7 +122,7 @@ export function analyzeMonthlyChanges(rows, config) {
     const description = descriptionColumn ? String(row[descriptionColumn] || '') : '';
     const vendor = vendorColumn ? String(row[vendorColumn] || '') : '';
 
-    const entry = { ...row, _amount: Math.abs(amount), _category: category, _description: description, _vendor: vendor, _date: d };
+    const entry = { ...row, _amount: amount, _category: category, _description: description, _vendor: vendor, _date: d };
 
     if (key === month1) m1Data.push(entry);
     else if (key === month2) m2Data.push(entry);
