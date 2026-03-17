@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend
+  PieChart, Pie, Cell,
 } from 'recharts';
-import { BarChart3, PieChartIcon } from 'lucide-react';
+import { BarChart3, PieChart as PieChartIcon } from 'lucide-react';
 import { formatMoney, formatMonthLabel } from '../utils/excelParser';
 
 const COLORS = [
@@ -16,10 +16,14 @@ const COLORS = [
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="glass rounded-lg p-3 text-sm shadow-xl">
-      <p className="font-medium text-slate-200 mb-1">{label}</p>
+    <div style={{
+      background: 'rgba(30,41,59,0.95)', backdropFilter: 'blur(12px)',
+      border: '1px solid rgba(99,102,241,0.2)', borderRadius: '10px',
+      padding: '12px 16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+    }}>
+      <p style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: '6px', fontSize: '13px' }}>{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color }} className="text-xs">
+        <p key={i} style={{ color: p.color, fontSize: '12px', margin: '2px 0' }}>
           {p.name}: {formatMoney(p.value)}원
         </p>
       ))}
@@ -30,10 +34,14 @@ function CustomTooltip({ active, payload, label }) {
 function CustomPieTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="glass rounded-lg p-3 text-sm shadow-xl">
-      <p className="font-medium text-slate-200">{payload[0].name}</p>
-      <p className="text-xs text-slate-300">{formatMoney(payload[0].value)}원</p>
-      <p className="text-xs text-slate-400">{(payload[0].percent * 100).toFixed(1)}%</p>
+    <div style={{
+      background: 'rgba(30,41,59,0.95)', backdropFilter: 'blur(12px)',
+      border: '1px solid rgba(99,102,241,0.2)', borderRadius: '10px',
+      padding: '12px 16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+    }}>
+      <p style={{ fontWeight: 600, color: '#e2e8f0', fontSize: '13px' }}>{payload[0].name}</p>
+      <p style={{ fontSize: '12px', color: '#cbd5e1' }}>{formatMoney(payload[0].value)}원</p>
+      <p style={{ fontSize: '12px', color: '#94a3b8' }}>{(payload[0].percent * 100).toFixed(1)}%</p>
     </div>
   );
 }
@@ -48,52 +56,39 @@ export default function AnalysisCharts({ result }) {
     [formatMonthLabel(result.month2.label)]: c.currAmount,
   }));
 
-  const pieData1 = result.categoryComparison
-    .filter(c => c.prevAmount > 0)
-    .slice(0, 8)
-    .map(c => ({ name: c.category, value: c.prevAmount }));
-
-  const pieData2 = result.categoryComparison
-    .filter(c => c.currAmount > 0)
-    .slice(0, 8)
-    .map(c => ({ name: c.category, value: c.currAmount }));
+  const pieData1 = result.categoryComparison.filter(c => c.prevAmount > 0).slice(0, 8).map(c => ({ name: c.category, value: c.prevAmount }));
+  const pieData2 = result.categoryComparison.filter(c => c.currAmount > 0).slice(0, 8).map(c => ({ name: c.category, value: c.currAmount }));
 
   const m1Label = formatMonthLabel(result.month1.label);
   const m2Label = formatMonthLabel(result.month2.label);
+
+  const chartBtnStyle = (active) => ({
+    padding: '8px 14px', borderRadius: '8px', border: 'none',
+    fontSize: '13px', cursor: 'pointer',
+    background: active ? 'rgba(59,130,246,0.2)' : 'transparent',
+    color: active ? '#60a5fa' : '#94a3b8',
+    display: 'flex', alignItems: 'center', gap: '6px',
+  });
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.2 }}
-      className="relative z-10 mt-8"
+      transition={{ duration: 0.5, delay: 0.2 }}
+      style={{ marginTop: '32px' }}
     >
-      <div className="glass rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-blue-400" />
-            카테고리별 비교
-          </h3>
-          <div className="flex gap-1 bg-slate-800/60 rounded-lg p-1">
-            <button
-              onClick={() => setChartView('bar')}
-              className={`px-3 py-1.5 rounded-md text-sm transition-all ${
-                chartView === 'bar'
-                  ? 'bg-blue-500/20 text-blue-400'
-                  : 'text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              <BarChart3 className="w-4 h-4" />
+      <div className="glass" style={{ borderRadius: '16px', padding: '32px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <BarChart3 style={{ width: '20px', height: '20px', color: '#60a5fa' }} />
+            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0' }}>카테고리별 비교</h3>
+          </div>
+          <div style={{ display: 'flex', gap: '4px', background: 'rgba(15,23,42,0.5)', borderRadius: '10px', padding: '4px' }}>
+            <button onClick={() => setChartView('bar')} style={chartBtnStyle(chartView === 'bar')}>
+              <BarChart3 style={{ width: '16px', height: '16px' }} /> 막대
             </button>
-            <button
-              onClick={() => setChartView('pie')}
-              className={`px-3 py-1.5 rounded-md text-sm transition-all ${
-                chartView === 'pie'
-                  ? 'bg-purple-500/20 text-purple-400'
-                  : 'text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              <PieChartIcon className="w-4 h-4" />
+            <button onClick={() => setChartView('pie')} style={chartBtnStyle(chartView === 'pie')}>
+              <PieChartIcon style={{ width: '16px', height: '16px' }} /> 파이
             </button>
           </div>
         </div>
@@ -102,100 +97,49 @@ export default function AnalysisCharts({ result }) {
           {chartView === 'bar' ? (
             <motion.div
               key="bar"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3 }}
-              className="h-[400px]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ height: '420px' }}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.1)" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fill: '#94a3b8', fontSize: 11 }}
-                    angle={-30}
-                    textAnchor="end"
-                    height={60}
-                  />
-                  <YAxis
-                    tick={{ fill: '#94a3b8', fontSize: 11 }}
-                    tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(0)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v}
-                  />
+                  <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12 }} angle={-30} textAnchor="end" height={60} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(0)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar
-                    dataKey={m1Label}
-                    fill="#6366f1"
-                    radius={[4, 4, 0, 0]}
-                    animationDuration={1000}
-                  />
-                  <Bar
-                    dataKey={m2Label}
-                    fill="#06b6d4"
-                    radius={[4, 4, 0, 0]}
-                    animationDuration={1000}
-                    animationBegin={300}
-                  />
+                  <Bar dataKey={m1Label} fill="#6366f1" radius={[4, 4, 0, 0]} animationDuration={1000} />
+                  <Bar dataKey={m2Label} fill="#06b6d4" radius={[4, 4, 0, 0]} animationDuration={1000} animationBegin={300} />
                 </BarChart>
               </ResponsiveContainer>
             </motion.div>
           ) : (
             <motion.div
               key="pie"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="h-[400px] grid grid-cols-1 md:grid-cols-2 gap-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ height: '420px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}
             >
               <div>
-                <p className="text-center text-sm text-slate-400 mb-2">{m1Label}</p>
+                <p style={{ textAlign: 'center', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: 500 }}>{m1Label}</p>
                 <ResponsiveContainer width="100%" height="90%">
                   <PieChart>
-                    <Pie
-                      data={pieData1}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={120}
-                      innerRadius={60}
-                      animationDuration={1000}
-                      label={({ name, percent }) =>
-                        percent > 0.05 ? `${name.substring(0, 6)} ${(percent * 100).toFixed(0)}%` : ''
-                      }
-                      labelLine={false}
-                    >
-                      {pieData1.map((_, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
+                    <Pie data={pieData1} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} innerRadius={60} animationDuration={1000}
+                      label={({ name, percent }) => percent > 0.05 ? `${name.substring(0, 6)} ${(percent * 100).toFixed(0)}%` : ''} labelLine={false}>
+                      {pieData1.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip content={<CustomPieTooltip />} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
               <div>
-                <p className="text-center text-sm text-slate-400 mb-2">{m2Label}</p>
+                <p style={{ textAlign: 'center', fontSize: '14px', color: '#94a3b8', marginBottom: '8px', fontWeight: 500 }}>{m2Label}</p>
                 <ResponsiveContainer width="100%" height="90%">
                   <PieChart>
-                    <Pie
-                      data={pieData2}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={120}
-                      innerRadius={60}
-                      animationDuration={1000}
-                      animationBegin={500}
-                      label={({ name, percent }) =>
-                        percent > 0.05 ? `${name.substring(0, 6)} ${(percent * 100).toFixed(0)}%` : ''
-                      }
-                      labelLine={false}
-                    >
-                      {pieData2.map((_, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
+                    <Pie data={pieData2} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} innerRadius={60} animationDuration={1000} animationBegin={500}
+                      label={({ name, percent }) => percent > 0.05 ? `${name.substring(0, 6)} ${(percent * 100).toFixed(0)}%` : ''} labelLine={false}>
+                      {pieData2.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip content={<CustomPieTooltip />} />
                   </PieChart>
@@ -205,15 +149,14 @@ export default function AnalysisCharts({ result }) {
           )}
         </AnimatePresence>
 
-        {/* Legend */}
         {chartView === 'bar' && (
-          <div className="flex justify-center gap-6 mt-4">
-            <div className="flex items-center gap-2 text-sm text-slate-400">
-              <div className="w-3 h-3 rounded bg-[#6366f1]" />
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', marginTop: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#94a3b8' }}>
+              <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }} />
               {m1Label}
             </div>
-            <div className="flex items-center gap-2 text-sm text-slate-400">
-              <div className="w-3 h-3 rounded bg-[#06b6d4]" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#94a3b8' }}>
+              <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#06b6d4' }} />
               {m2Label}
             </div>
           </div>

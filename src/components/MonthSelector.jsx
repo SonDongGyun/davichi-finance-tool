@@ -5,72 +5,78 @@ import { formatMonthLabel } from '../utils/excelParser';
 export default function MonthSelector({ months, month1, month2, onMonth1Change, onMonth2Change, onAnalyze }) {
   const canAnalyze = month1 && month2 && month1 !== month2;
 
+  const selectStyle = {
+    width: '100%',
+    padding: '12px 16px',
+    borderRadius: '10px',
+    background: 'rgba(30,41,59,0.8)',
+    border: '1px solid rgba(100,116,139,0.3)',
+    color: '#e2e8f0',
+    fontSize: '15px',
+    outline: 'none',
+    cursor: 'pointer',
+    appearance: 'none',
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.3 }}
-      className="relative z-10 max-w-3xl mx-auto mt-8"
+      transition={{ duration: 0.5, delay: 0.3 }}
+      style={{ maxWidth: '720px', marginLeft: 'auto', marginRight: 'auto', marginTop: '32px' }}
     >
-      <div className="glass rounded-2xl p-6">
-        <div className="flex items-center gap-3 mb-5">
-          <Calendar className="w-5 h-5 text-blue-400" />
-          <h3 className="text-lg font-semibold text-slate-200">비교할 월 선택</h3>
+      <div className="glass" style={{ borderRadius: '16px', padding: '32px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+          <Calendar style={{ width: '20px', height: '20px', color: '#60a5fa' }} />
+          <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0' }}>비교할 월 선택</h3>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="flex-1 w-full">
-            <label className="block text-sm text-slate-400 mb-2">기준월 (이전)</label>
-            <select
-              value={month1}
-              onChange={(e) => onMonth1Change(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-600/30 text-slate-200 focus:outline-none focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/20 transition-all appearance-none cursor-pointer"
-            >
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px' }}>
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '8px', fontWeight: 500 }}>
+              기준월 (이전)
+            </label>
+            <select value={month1} onChange={(e) => onMonth1Change(e.target.value)} style={selectStyle}>
               <option value="">월 선택</option>
-              {months.map(m => (
-                <option key={m} value={m}>{formatMonthLabel(m)}</option>
-              ))}
+              {months.map(m => <option key={m} value={m}>{formatMonthLabel(m)}</option>)}
             </select>
           </div>
 
-          <motion.div
-            animate={{ x: [0, 5, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="hidden sm:flex items-center pt-6"
-          >
-            <ArrowRight className="w-6 h-6 text-purple-400" />
-          </motion.div>
+          <div style={{ paddingBottom: '8px' }}>
+            <ArrowRight style={{ width: '24px', height: '24px', color: '#a78bfa' }} />
+          </div>
 
-          <div className="flex-1 w-full">
-            <label className="block text-sm text-slate-400 mb-2">비교월 (이후)</label>
-            <select
-              value={month2}
-              onChange={(e) => onMonth2Change(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-600/30 text-slate-200 focus:outline-none focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/20 transition-all appearance-none cursor-pointer"
-            >
+          <div style={{ flex: 1 }}>
+            <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '8px', fontWeight: 500 }}>
+              비교월 (이후)
+            </label>
+            <select value={month2} onChange={(e) => onMonth2Change(e.target.value)} style={selectStyle}>
               <option value="">월 선택</option>
-              {months.map(m => (
-                <option key={m} value={m}>{formatMonthLabel(m)}</option>
-              ))}
+              {months.map(m => <option key={m} value={m}>{formatMonthLabel(m)}</option>)}
             </select>
           </div>
         </div>
 
-        <motion.button
-          whileHover={{ scale: canAnalyze ? 1.02 : 1 }}
-          whileTap={{ scale: canAnalyze ? 0.98 : 1 }}
+        <button
           onClick={onAnalyze}
           disabled={!canAnalyze}
-          className={`
-            mt-6 w-full py-3.5 rounded-xl font-semibold text-base transition-all duration-300
-            ${canAnalyze
-              ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40'
-              : 'bg-slate-700/40 text-slate-500 cursor-not-allowed'
-            }
-          `}
+          style={{
+            marginTop: '28px',
+            width: '100%',
+            padding: '14px',
+            borderRadius: '10px',
+            fontSize: '15px',
+            fontWeight: 600,
+            border: 'none',
+            cursor: canAnalyze ? 'pointer' : 'not-allowed',
+            background: canAnalyze
+              ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)'
+              : 'rgba(51,65,85,0.4)',
+            color: canAnalyze ? 'white' : '#64748b',
+          }}
         >
           {canAnalyze ? '분석 시작' : '두 달을 모두 선택해주세요'}
-        </motion.button>
+        </button>
       </div>
     </motion.div>
   );

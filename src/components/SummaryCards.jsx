@@ -30,16 +30,6 @@ function AnimatedNumber({ value, prefix = '', suffix = '' }) {
   return <span>{prefix}{formatMoney(display)}{suffix}</span>;
 }
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.9 },
-  visible: (i) => ({
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: { duration: 0.5, delay: i * 0.1, ease: 'easeOut' },
-  }),
-};
-
 export default function SummaryCards({ result }) {
   const { month1, month2, totalDiff, totalPctChange, newItems, removedItems, increasedItems, decreasedItems } = result;
 
@@ -48,35 +38,34 @@ export default function SummaryCards({ result }) {
       label: formatMonthLabel(month1.label),
       value: month1.total,
       sub: `${month1.count}건`,
-      icon: <Equal className="w-5 h-5" />,
-      color: 'from-slate-500 to-slate-600',
-      glow: '',
+      icon: <Equal style={{ width: '20px', height: '20px' }} />,
+      gradient: 'linear-gradient(135deg, #64748b, #475569)',
     },
     {
       label: formatMonthLabel(month2.label),
       value: month2.total,
       sub: `${month2.count}건`,
-      icon: <Equal className="w-5 h-5" />,
-      color: 'from-blue-500 to-blue-600',
-      glow: 'shadow-blue-500/20',
+      icon: <Equal style={{ width: '20px', height: '20px' }} />,
+      gradient: 'linear-gradient(135deg, #3b82f6, #2563eb)',
     },
     {
       label: '총 증감액',
       value: totalDiff,
       sub: `${totalPctChange > 0 ? '+' : ''}${totalPctChange}%`,
       icon: totalDiff >= 0
-        ? <TrendingUp className="w-5 h-5" />
-        : <TrendingDown className="w-5 h-5" />,
-      color: totalDiff >= 0 ? 'from-red-500 to-orange-500' : 'from-emerald-500 to-teal-500',
-      glow: totalDiff >= 0 ? 'shadow-red-500/20' : 'shadow-emerald-500/20',
+        ? <TrendingUp style={{ width: '20px', height: '20px' }} />
+        : <TrendingDown style={{ width: '20px', height: '20px' }} />,
+      gradient: totalDiff >= 0
+        ? 'linear-gradient(135deg, #ef4444, #f97316)'
+        : 'linear-gradient(135deg, #10b981, #14b8a6)',
     },
   ];
 
   const changeCards = [
-    { label: '신규 항목', count: newItems.length, icon: <Plus className="w-4 h-4" />, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { label: '제거 항목', count: removedItems.length, icon: <Minus className="w-4 h-4" />, color: 'text-orange-400', bg: 'bg-orange-500/10' },
-    { label: '증가 항목', count: increasedItems.length, icon: <ArrowUpRight className="w-4 h-4" />, color: 'text-red-400', bg: 'bg-red-500/10' },
-    { label: '감소 항목', count: decreasedItems.length, icon: <ArrowDownRight className="w-4 h-4" />, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    { label: '신규 항목', count: newItems.length, icon: <Plus style={{ width: '16px', height: '16px' }} />, color: '#60a5fa', bg: 'rgba(59,130,246,0.1)' },
+    { label: '제거 항목', count: removedItems.length, icon: <Minus style={{ width: '16px', height: '16px' }} />, color: '#fb923c', bg: 'rgba(249,115,22,0.1)' },
+    { label: '증가 항목', count: increasedItems.length, icon: <ArrowUpRight style={{ width: '16px', height: '16px' }} />, color: '#f87171', bg: 'rgba(239,68,68,0.1)' },
+    { label: '감소 항목', count: decreasedItems.length, icon: <ArrowDownRight style={{ width: '16px', height: '16px' }} />, color: '#34d399', bg: 'rgba(16,185,129,0.1)' },
   ];
 
   return (
@@ -84,38 +73,43 @@ export default function SummaryCards({ result }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="relative z-10 mt-10"
+      style={{ marginTop: '40px' }}
     >
       {/* Main summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '24px' }}>
         {cards.map((card, i) => (
           <motion.div
             key={card.label}
-            custom={i}
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-            whileHover={{ y: -4, transition: { duration: 0.2 } }}
-            className={`glass rounded-2xl p-6 shadow-lg ${card.glow}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="glass"
+            style={{ borderRadius: '16px', padding: '28px' }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-slate-400">{card.label}</span>
-              <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${card.color} flex items-center justify-center text-white`}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <span style={{ fontSize: '14px', color: '#94a3b8', fontWeight: 500 }}>{card.label}</span>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '10px',
+                background: card.gradient,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white',
+              }}>
                 {card.icon}
               </div>
             </div>
-            <div className="text-2xl font-bold text-white">
+            <div style={{ fontSize: '26px', fontWeight: 700, color: 'white', fontFamily: 'monospace' }}>
               <AnimatedNumber
                 value={Math.abs(card.value)}
                 prefix={card.value < 0 ? '-' : ''}
                 suffix="원"
               />
             </div>
-            <div className={`text-sm mt-1 ${
-              card.label === '총 증감액'
-                ? totalDiff >= 0 ? 'text-red-400' : 'text-emerald-400'
-                : 'text-slate-400'
-            }`}>
+            <div style={{
+              fontSize: '14px', marginTop: '6px',
+              color: card.label === '총 증감액'
+                ? totalDiff >= 0 ? '#f87171' : '#34d399'
+                : '#94a3b8',
+              fontWeight: 500,
+            }}>
               {card.sub}
             </div>
           </motion.div>
@@ -123,22 +117,26 @@ export default function SummaryCards({ result }) {
       </div>
 
       {/* Change type cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
         {changeCards.map((card, i) => (
           <motion.div
             key={card.label}
-            custom={i + 3}
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-            whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-            className="glass-light rounded-xl p-4 text-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 + i * 0.08 }}
+            className="glass-light"
+            style={{ borderRadius: '14px', padding: '24px 16px', textAlign: 'center' }}
           >
-            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${card.bg} ${card.color} text-xs font-medium mb-2`}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '4px 12px', borderRadius: '20px',
+              background: card.bg, color: card.color,
+              fontSize: '12px', fontWeight: 600, marginBottom: '12px',
+            }}>
               {card.icon}
               {card.label}
             </div>
-            <div className="text-3xl font-bold text-white">{card.count}</div>
+            <div style={{ fontSize: '32px', fontWeight: 700, color: 'white' }}>{card.count}</div>
           </motion.div>
         ))}
       </div>
