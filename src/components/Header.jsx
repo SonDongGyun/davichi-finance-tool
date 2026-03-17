@@ -7,9 +7,9 @@ export default function Header() {
       initial={{ opacity: 0, y: -30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
-      className="relative z-10 py-8 px-6"
+      className="relative z-10 py-8"
     >
-      <div className="mx-auto px-6 flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <motion.div
             whileHover={{ rotate: 360, scale: 1.1 }}

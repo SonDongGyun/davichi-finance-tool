@@ -120,7 +120,7 @@ export default function AnalysisSummary({ result }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.15 }}
-      className="relative z-10 px-6 mt-8"
+      className="relative z-10 mt-8"
     >
       <div className="glass rounded-2xl p-6">
         <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2 mb-5">

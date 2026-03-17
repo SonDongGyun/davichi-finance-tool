@@ -60,10 +60,10 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen w-full relative flex flex-col items-center">
+    <div className="min-h-screen w-full relative">
       <div className="bg-particles" />
 
-      <div className="w-full max-w-[1400px] mx-auto">
+      <div style={{ maxWidth: '1400px', margin: '0 auto', width: '100%', padding: '0 24px' }}>
         <Header />
 
         <main className="w-full pb-16">
@@ -90,7 +90,7 @@ function App() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="relative z-10 max-w-3xl mx-auto px-6 mt-6"
+                  className="relative z-10 max-w-3xl mx-auto mt-6"
                 >
                   <div className="glass-light rounded-xl p-4">
                     <p className="text-sm text-slate-400 mb-3">
@@ -149,7 +149,7 @@ function App() {
                 exit={{ opacity: 0 }}
               >
                 {/* Back button */}
-                <div className="relative z-10 px-6 mt-6">
+                <div className="relative z-10 mt-6">
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
