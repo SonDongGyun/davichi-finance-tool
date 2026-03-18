@@ -5,17 +5,20 @@ import { formatMoney, formatMonthLabel } from './excelParser';
 const STATUS_KR = { new: '신규', removed: '제거', increased: '증가', decreased: '감소', unchanged: '동일' };
 
 async function loadKoreanFont(doc) {
-  const fontUrl = 'https://fastly.jsdelivr.net/gh/niceplugin/NanumSquareRound/NanumSquareRoundR.ttf';
+  const fontUrl = import.meta.env.BASE_URL + 'fonts/NanumGothic-Regular.ttf';
   const res = await fetch(fontUrl);
+  if (!res.ok) throw new Error('Font load failed');
   const buf = await res.arrayBuffer();
   const bytes = new Uint8Array(buf);
   let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, chunk);
   }
   const base64 = btoa(binary);
-  doc.addFileToVFS('NanumSquareRound.ttf', base64);
-  doc.addFont('NanumSquareRound.ttf', 'NanumSquare', 'normal');
+  doc.addFileToVFS('NanumGothic.ttf', base64);
+  doc.addFont('NanumGothic.ttf', 'NanumSquare', 'normal');
 }
 
 function addPageFooter(doc, pageNum, totalPages, m1, m2) {
