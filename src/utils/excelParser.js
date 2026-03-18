@@ -24,8 +24,8 @@ export function parseExcelFile(file) {
         });
       } catch (err) {
         const msg = err.message || '';
-        if (msg.includes('password') || msg.includes('encrypt') || msg.includes('cfb')) {
-          reject(new Error('암호가 설정된 엑셀 파일입니다. 엑셀에서 암호를 해제한 후 다시 업로드해주세요.'));
+        if (msg.includes('password') || msg.includes('encrypt') || msg.includes('cfb') || msg.includes('Unsupported')) {
+          reject({ encrypted: true, message: '암호가 설정된 엑셀 파일입니다.' });
         } else {
           reject(new Error('엑셀 파일 파싱 중 오류가 발생했습니다: ' + msg));
         }
@@ -34,6 +34,48 @@ export function parseExcelFile(file) {
     reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'));
     reader.readAsArrayBuffer(file);
   });
+}
+
+export async function decryptAndParse(file, password) {
+  const arrayBuffer = await file.arrayBuffer();
+  const base64 = btoa(
+    new Uint8Array(arrayBuffer).reduce((s, b) => s + String.fromCharCode(b), '')
+  );
+
+  const res = await fetch('/api/decrypt', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file: base64, password }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || '복호화에 실패했습니다.');
+  }
+
+  // base64 → Uint8Array → XLSX parse
+  const decoded = atob(data.file);
+  const bytes = new Uint8Array(decoded.length);
+  for (let i = 0; i < decoded.length; i++) {
+    bytes[i] = decoded.charCodeAt(i);
+  }
+
+  const workbook = XLSX.read(bytes, { type: 'array' });
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+  const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+  if (jsonData.length === 0) {
+    throw new Error('복호화된 파일에 데이터가 없습니다.');
+  }
+
+  return {
+    sheetName,
+    headers: Object.keys(jsonData[0]),
+    rows: jsonData,
+    totalRows: jsonData.length,
+  };
 }
 
 export function detectDateColumn(headers) {

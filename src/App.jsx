@@ -10,7 +10,8 @@ import AnalysisCharts from './components/AnalysisCharts';
 import DetailTable from './components/DetailTable';
 import VendorTable from './components/VendorTable';
 import ExportButtons from './components/ExportButtons';
-import { parseExcelFile, extractMonths, analyzeMonthlyChanges } from './utils/excelParser';
+import PasswordModal from './components/PasswordModal';
+import { parseExcelFile, decryptAndParse, extractMonths, analyzeMonthlyChanges } from './utils/excelParser';
 import './App.css';
 
 function App() {
@@ -22,11 +23,54 @@ function App() {
   const [month2, setMonth2] = useState('');
   const [analysisResult, setAnalysisResult] = useState(null);
 
-  const handleFileLoaded = useCallback(async (file) => {
-    const parsed = await parseExcelFile(file);
+  // 암호 모달 상태
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [pendingFile, setPendingFile] = useState(null);
+  const [passwordError, setPasswordError] = useState('');
+  const [isDecrypting, setIsDecrypting] = useState(false);
+
+  const handleFileSuccess = useCallback((parsed) => {
     setFileData(parsed);
     setStep('mapping');
     setAnalysisResult(null);
+    setShowPasswordModal(false);
+    setPendingFile(null);
+    setPasswordError('');
+  }, []);
+
+  const handleFileLoaded = useCallback(async (file) => {
+    try {
+      const parsed = await parseExcelFile(file);
+      handleFileSuccess(parsed);
+    } catch (err) {
+      if (err && err.encrypted) {
+        // 암호화된 파일 감지 → 모달 표시
+        setPendingFile(file);
+        setPasswordError('');
+        setShowPasswordModal(true);
+      } else {
+        throw err;
+      }
+    }
+  }, [handleFileSuccess]);
+
+  const handlePasswordSubmit = useCallback(async (password) => {
+    if (!pendingFile) return;
+    setIsDecrypting(true);
+    setPasswordError('');
+    try {
+      const parsed = await decryptAndParse(pendingFile, password);
+      handleFileSuccess(parsed);
+    } catch (err) {
+      setPasswordError(err.message || '복호화에 실패했습니다.');
+    }
+    setIsDecrypting(false);
+  }, [pendingFile, handleFileSuccess]);
+
+  const handlePasswordClose = useCallback(() => {
+    setShowPasswordModal(false);
+    setPendingFile(null);
+    setPasswordError('');
   }, []);
 
   const handleColumnConfirm = useCallback((config) => {
@@ -198,6 +242,15 @@ function App() {
           </footer>
         </main>
       </div>
+
+      {/* Password Modal */}
+      <PasswordModal
+        isOpen={showPasswordModal}
+        onSubmit={handlePasswordSubmit}
+        onClose={handlePasswordClose}
+        error={passwordError}
+        isLoading={isDecrypting}
+      />
     </div>
   );
 }
