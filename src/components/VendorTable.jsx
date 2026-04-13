@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, ChevronDown, ChevronUp, Search } from 'lucide-react';
-import { formatMoney } from '../utils/excelParser';
+import { formatMoney, formatMonthLabel } from '../utils/excelParser';
+import CategoryTabs from './CategoryTabs';
 
 const DEFAULT_COUNT = 15;
 const PAGE_SIZE = 10;
@@ -18,12 +19,24 @@ export default function VendorTable({ result }) {
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('category');
   const [sortDir, setSortDir] = useState('asc');
+  const [expandedRow, setExpandedRow] = useState(null);
+
+  const categories = useMemo(() => {
+    const cats = [...new Set(result.vendorComparison.map(v => v.category))];
+    cats.sort((a, b) => a.localeCompare(b));
+    return cats;
+  }, [result.vendorComparison]);
 
   if (result.vendorComparison.length === 0) return null;
 
   let filtered = result.vendorComparison;
+
+  if (selectedCategory !== 'all') {
+    filtered = filtered.filter(item => item.category === selectedCategory);
+  }
 
   if (searchTerm) {
     const term = searchTerm.toLowerCase();
@@ -51,7 +64,7 @@ export default function VendorTable({ result }) {
   const remaining = filtered.length - visibleCount;
   const maxDiff = filtered[0]?.diff ? Math.abs(filtered[0].diff) : 1;
 
-  const filters = [
+  const statusFilters = [
     { key: 'all', label: '전체' },
     { key: 'new', label: '신규' },
     { key: 'removed', label: '제거' },
@@ -62,6 +75,11 @@ export default function VendorTable({ result }) {
   const handleSort = (col) => {
     if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortBy(col); setSortDir(col === 'diff' ? 'desc' : 'asc'); }
+  };
+
+  const handleCategoryChange = (cat) => {
+    setSelectedCategory(cat);
+    setVisibleCount(DEFAULT_COUNT);
   };
 
   const thStyle = (clickable) => ({
@@ -111,25 +129,32 @@ export default function VendorTable({ result }) {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') { setSearchTerm(searchInput); setVisibleCount(DEFAULT_COUNT); }
               }}
-              placeholder="계정과목 / 거래처 검색 (Enter)"
+              placeholder="거래처 검색 (Enter)"
               style={{
                 paddingLeft: '36px', paddingRight: '16px', paddingTop: '10px', paddingBottom: '10px',
                 borderRadius: '8px', background: 'rgba(15,23,42,0.6)',
                 border: '1px solid rgba(100,116,139,0.3)',
-                fontSize: '14px', color: '#e2e8f0', outline: 'none', width: '260px',
+                fontSize: '14px', color: '#e2e8f0', outline: 'none', width: '220px',
               }}
             />
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Category Tabs */}
+        <CategoryTabs
+          categories={categories}
+          selected={selectedCategory}
+          onSelect={handleCategoryChange}
+        />
+
+        {/* Status Filters */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
-          {filters.map(f => (
+          {statusFilters.map(f => (
             <button
               key={f.key}
               onClick={() => { setFilterStatus(f.key); setVisibleCount(DEFAULT_COUNT); }}
               style={{
-                padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
+                padding: '6px 14px', borderRadius: '8px', fontSize: '12px', fontWeight: 600,
                 border: filterStatus === f.key ? '1px solid rgba(96,165,250,0.4)' : '1px solid rgba(100,116,139,0.2)',
                 background: filterStatus === f.key ? 'rgba(59,130,246,0.15)' : 'rgba(15,23,42,0.4)',
                 color: filterStatus === f.key ? '#60a5fa' : '#94a3b8',
@@ -138,8 +163,8 @@ export default function VendorTable({ result }) {
             >
               {f.label}
               {f.key !== 'all' && (
-                <span style={{ marginLeft: '6px', opacity: 0.7, fontSize: '12px' }}>
-                  {result.vendorComparison.filter(c => c.status === f.key).length}
+                <span style={{ marginLeft: '6px', opacity: 0.7, fontSize: '11px' }}>
+                  {result.vendorComparison.filter(c => c.status === f.key && (selectedCategory === 'all' || c.category === selectedCategory)).length}
                 </span>
               )}
             </button>
@@ -152,7 +177,7 @@ export default function VendorTable({ result }) {
             <thead>
               <tr style={{ borderBottom: '2px solid rgba(51,65,85,0.5)' }}>
                 {[
-                  { key: 'category', label: '계정과목', align: 'left' },
+                  ...(selectedCategory === 'all' ? [{ key: 'category', label: '계정과목', align: 'left' }] : []),
                   { key: 'vendor', label: '거래처', align: 'left' },
                   { key: 'prev', label: '이전', align: 'right' },
                   { key: 'curr', label: '현재', align: 'right' },
@@ -174,70 +199,122 @@ export default function VendorTable({ result }) {
                   </th>
                 ))}
                 <th style={{ ...thStyle(false), textAlign: 'center', width: '80px' }}>상태</th>
-                <th style={{ ...thStyle(false), textAlign: 'center', width: '100px' }}>변동</th>
+                <th style={{ ...thStyle(false), textAlign: 'center', width: '40px' }}></th>
               </tr>
             </thead>
             <tbody>
               {data.map((item, i) => {
                 const st = statusLabels[item.status];
+                const rowKey = `${item.category}-${item.vendor}`;
+                const isExpanded = expandedRow === rowKey;
+                const colSpan = (selectedCategory === 'all' ? 1 : 0) + 6;
                 return (
-                  <motion.tr
-                    key={`${item.category}-${item.vendor}`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.02 }}
-                    style={{
-                      borderBottom: '1px solid rgba(30,41,59,0.5)',
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.06)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <td style={{ ...tdStyle, color: '#94a3b8', fontWeight: 500, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.category}
-                    </td>
-                    <td style={{ ...tdStyle, color: '#e2e8f0', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.vendor}
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: 'right', fontFamily: 'monospace', color: '#cbd5e1' }}>
-                      {item.prevAmount > 0 ? `${formatMoney(item.prevAmount)}원` : '-'}
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: 'right', fontFamily: 'monospace', color: '#cbd5e1' }}>
-                      {item.currAmount > 0 ? `${formatMoney(item.currAmount)}원` : '-'}
-                    </td>
-                    <td style={{
-                      ...tdStyle, textAlign: 'right', fontFamily: 'monospace', fontWeight: 600,
-                      color: item.diff > 0 ? '#f87171' : '#34d399',
-                    }}>
-                      {item.diff > 0 ? '+' : ''}{formatMoney(item.diff)}원
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: 'center' }}>
-                      <span style={{
-                        display: 'inline-block', padding: '3px 10px', borderRadius: '20px',
-                        fontSize: '11px', fontWeight: 600,
-                        color: st.color, background: st.bg,
+                  <React.Fragment key={rowKey}>
+                    <motion.tr
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: i * 0.02 }}
+                      onClick={() => setExpandedRow(isExpanded ? null : rowKey)}
+                      style={{
+                        borderBottom: '1px solid rgba(30,41,59,0.5)',
+                        transition: 'background 0.15s',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99,102,241,0.06)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {selectedCategory === 'all' && (
+                        <td style={{ ...tdStyle, color: '#94a3b8', fontWeight: 500, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.category}
+                        </td>
+                      )}
+                      <td style={{ ...tdStyle, color: '#e2e8f0', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.vendor}
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'right', fontFamily: 'monospace', color: '#cbd5e1' }}>
+                        {item.prevAmount > 0 ? `${formatMoney(item.prevAmount)}원` : '-'}
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'right', fontFamily: 'monospace', color: '#cbd5e1' }}>
+                        {item.currAmount > 0 ? `${formatMoney(item.currAmount)}원` : '-'}
+                      </td>
+                      <td style={{
+                        ...tdStyle, textAlign: 'right', fontFamily: 'monospace', fontWeight: 600,
+                        color: item.diff > 0 ? '#f87171' : '#34d399',
                       }}>
-                        {st.label}
-                      </span>
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: 'center' }}>
-                      <div style={{
-                        width: '100%', maxWidth: '80px', height: '8px',
-                        background: 'rgba(15,23,42,0.6)', borderRadius: '4px',
-                        overflow: 'hidden', margin: '0 auto',
-                      }}>
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${Math.min(100, (Math.abs(item.diff) / maxDiff) * 100)}%` }}
-                          transition={{ duration: 0.8, delay: i * 0.03 }}
-                          style={{
-                            height: '100%', borderRadius: '4px',
-                            background: item.diff > 0 ? '#ef4444' : '#10b981',
-                          }}
-                        />
-                      </div>
-                    </td>
-                  </motion.tr>
+                        {item.diff > 0 ? '+' : ''}{formatMoney(item.diff)}원
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'center' }}>
+                        <span style={{
+                          display: 'inline-block', padding: '3px 10px', borderRadius: '20px',
+                          fontSize: '11px', fontWeight: 600,
+                          color: st.color, background: st.bg,
+                        }}>
+                          {st.label}
+                        </span>
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'center' }}>
+                        <ChevronDown style={{
+                          width: '16px', height: '16px', color: '#64748b',
+                          transform: isExpanded ? 'rotate(180deg)' : 'none',
+                          transition: 'transform 0.2s',
+                        }} />
+                      </td>
+                    </motion.tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={colSpan} style={{ padding: '16px 24px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            {item.prevItems && item.prevItems.length > 0 && (
+                              <div style={{ background: 'rgba(15,23,42,0.5)', borderRadius: '12px', padding: '16px' }}>
+                                <p style={{ fontSize: '13px', fontWeight: 600, color: '#cbd5e1', marginBottom: '12px' }}>
+                                  {formatMonthLabel(result.month1.label)} 상세 ({item.prevItems.length}건)
+                                </p>
+                                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                  {item.prevItems.map((entry, j) => (
+                                    <div key={j} style={{
+                                      display: 'flex', justifyContent: 'space-between',
+                                      fontSize: '12px', color: '#94a3b8', padding: '6px 0',
+                                      borderBottom: '1px solid rgba(51,65,85,0.3)',
+                                    }}>
+                                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                        {entry._description || '-'}
+                                      </span>
+                                      <span style={{ marginLeft: '16px', fontFamily: 'monospace', color: '#cbd5e1' }}>
+                                        {formatMoney(entry._amount)}원
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {item.currItems && item.currItems.length > 0 && (
+                              <div style={{ background: 'rgba(15,23,42,0.5)', borderRadius: '12px', padding: '16px' }}>
+                                <p style={{ fontSize: '13px', fontWeight: 600, color: '#cbd5e1', marginBottom: '12px' }}>
+                                  {formatMonthLabel(result.month2.label)} 상세 ({item.currItems.length}건)
+                                </p>
+                                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                  {item.currItems.map((entry, j) => (
+                                    <div key={j} style={{
+                                      display: 'flex', justifyContent: 'space-between',
+                                      fontSize: '12px', color: '#94a3b8', padding: '6px 0',
+                                      borderBottom: '1px solid rgba(51,65,85,0.3)',
+                                    }}>
+                                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                        {entry._description || '-'}
+                                      </span>
+                                      <span style={{ marginLeft: '16px', fontFamily: 'monospace', color: '#cbd5e1' }}>
+                                        {formatMoney(entry._amount)}원
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </tbody>

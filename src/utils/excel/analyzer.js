@@ -92,18 +92,20 @@ export function analyzeMonthlyChanges(rows, config) {
     const vendor = e._vendor || e._description || '기타';
     const category = e._category || '미분류';
     const key = `${category}|||${vendor}`;
-    if (!m1Vendors[key]) m1Vendors[key] = { total: 0, count: 0, category, vendor };
+    if (!m1Vendors[key]) m1Vendors[key] = { total: 0, count: 0, category, vendor, items: [] };
     m1Vendors[key].total += e._amount;
     m1Vendors[key].count++;
+    m1Vendors[key].items.push(e);
   });
 
   m2Data.forEach(e => {
     const vendor = e._vendor || e._description || '기타';
     const category = e._category || '미분류';
     const key = `${category}|||${vendor}`;
-    if (!m2Vendors[key]) m2Vendors[key] = { total: 0, count: 0, category, vendor };
+    if (!m2Vendors[key]) m2Vendors[key] = { total: 0, count: 0, category, vendor, items: [] };
     m2Vendors[key].total += e._amount;
     m2Vendors[key].count++;
+    m2Vendors[key].items.push(e);
   });
 
   const allVendorKeys = new Set([...Object.keys(m1Vendors), ...Object.keys(m2Vendors)]);
@@ -128,6 +130,8 @@ export function analyzeMonthlyChanges(rows, config) {
         currAmount: curr,
         diff,
         status,
+        prevItems: m1Vendors[key]?.items || [],
+        currItems: m2Vendors[key]?.items || [],
       });
     }
   });
