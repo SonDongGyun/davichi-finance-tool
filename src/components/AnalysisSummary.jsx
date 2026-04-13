@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquareText, PlusCircle, MinusCircle, AlertTriangle, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { formatMoney, formatMonthLabel } from '../utils/excelParser';
@@ -107,10 +107,15 @@ function KeyChangeItem({ item, type }) {
   );
 }
 
-function KeyChangeList({ items, type }) {
+function KeyChangeList({ items, type, parentRef }) {
   const [visibleCount, setVisibleCount] = useState(DEFAULT_SHOW_COUNT);
   const visible = items.slice(0, visibleCount);
   const remaining = items.length - visibleCount;
+
+  const handleCollapse = () => {
+    setVisibleCount(DEFAULT_SHOW_COUNT);
+    parentRef?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -132,7 +137,7 @@ function KeyChangeList({ items, type }) {
             </button>
           )}
           {visibleCount > DEFAULT_SHOW_COUNT && (
-            <button onClick={() => setVisibleCount(DEFAULT_SHOW_COUNT)} style={listBtnStyle}>
+            <button onClick={handleCollapse} style={listBtnStyle}>
               접기
             </button>
           )}
@@ -229,6 +234,7 @@ export default function AnalysisSummary({ result }) {
   const [threshold, setThreshold] = useState(100000);
   const [visibleLineCount, setVisibleLineCount] = useState(DEFAULT_SHOW_COUNT);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const sectionRef = useRef(null);
   const allLines = generateSummaryLines(result);
 
   const m1Label = formatMonthLabel(result.month1.label);
@@ -272,7 +278,7 @@ export default function AnalysisSummary({ result }) {
       transition={{ duration: 0.5, delay: 0.15 }}
       style={{ marginTop: '32px' }}
     >
-      <div className="glass" style={{ borderRadius: '16px', padding: '32px' }}>
+      <div ref={sectionRef} className="glass" style={{ borderRadius: '16px', padding: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
           <MessageSquareText style={{ width: '20px', height: '20px', color: '#fbbf24' }} />
           <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0' }}>분석 요약</h3>
@@ -346,7 +352,7 @@ export default function AnalysisSummary({ result }) {
                     </span>
                     <span style={{ fontSize: '11px', color: '#64748b' }}>({newItems.length}건)</span>
                   </div>
-                  <KeyChangeList items={newItems} type="new" />
+                  <KeyChangeList items={newItems} type="new" parentRef={sectionRef} />
                 </div>
 
                 {/* Removed items */}
@@ -362,7 +368,7 @@ export default function AnalysisSummary({ result }) {
                     </span>
                     <span style={{ fontSize: '11px', color: '#64748b' }}>({removedItems.length}건)</span>
                   </div>
-                  <KeyChangeList items={removedItems} type="removed" />
+                  <KeyChangeList items={removedItems} type="removed" parentRef={sectionRef} />
                 </div>
               </div>
             )}
@@ -414,7 +420,7 @@ export default function AnalysisSummary({ result }) {
             )}
             {visibleLineCount > DEFAULT_SHOW_COUNT && (
               <button
-                onClick={() => setVisibleLineCount(DEFAULT_SHOW_COUNT)}
+                onClick={() => { setVisibleLineCount(DEFAULT_SHOW_COUNT); sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
                 style={{ ...listBtnStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               >
                 <ChevronDown style={{ width: '14px', height: '14px', transform: 'rotate(180deg)' }} />

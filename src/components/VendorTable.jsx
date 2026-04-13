@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { formatMoney, formatMonthLabel } from '../utils/excelParser';
@@ -23,6 +23,7 @@ export default function VendorTable({ result }) {
   const [sortBy, setSortBy] = useState('category');
   const [sortDir, setSortDir] = useState('asc');
   const [expandedRow, setExpandedRow] = useState(null);
+  const sectionRef = useRef(null);
 
   const categories = useMemo(() => {
     const cats = [...new Set(result.vendorComparison.map(v => v.category))];
@@ -111,7 +112,7 @@ export default function VendorTable({ result }) {
       transition={{ duration: 0.5, delay: 0.4 }}
       style={{ marginTop: '32px' }}
     >
-      <div className="glass" style={{ borderRadius: '16px', padding: '32px' }}>
+      <div ref={sectionRef} className="glass" style={{ borderRadius: '16px', padding: '32px' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -355,7 +356,7 @@ export default function VendorTable({ result }) {
               </button>
             )}
             {visibleCount > DEFAULT_COUNT && (
-              <button onClick={() => setVisibleCount(DEFAULT_COUNT)} style={btnStyle}>
+              <button onClick={() => { setVisibleCount(DEFAULT_COUNT); sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }} style={btnStyle}>
                 <ChevronDown style={{ width: '14px', height: '14px', transform: 'rotate(180deg)' }} />
                 접기
               </button>
