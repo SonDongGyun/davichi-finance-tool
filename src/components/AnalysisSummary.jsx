@@ -17,40 +17,15 @@ const THRESHOLD_OPTIONS = [
   { label: '500만원 이상', value: 5000000 },
 ];
 
-function ShowMoreButton({ total, visible, onClick }) {
-  if (total <= visible) return null;
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        width: '100%', padding: '8px', marginTop: '6px',
-        borderRadius: '8px', fontSize: '12px', fontWeight: 600,
-        background: 'rgba(100,116,139,0.1)', color: '#94a3b8',
-        border: '1px solid rgba(100,116,139,0.15)',
-        cursor: 'pointer',
-      }}
-    >
-      +{total - visible}건 더보기
-    </button>
-  );
-}
+const PAGE_SIZE = 10;
 
-function ShowLessButton({ onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        width: '100%', padding: '8px', marginTop: '6px',
-        borderRadius: '8px', fontSize: '12px', fontWeight: 600,
-        background: 'rgba(100,116,139,0.1)', color: '#94a3b8',
-        border: '1px solid rgba(100,116,139,0.15)',
-        cursor: 'pointer',
-      }}
-    >
-      접기
-    </button>
-  );
-}
+const listBtnStyle = {
+  padding: '8px 16px',
+  borderRadius: '8px', fontSize: '12px', fontWeight: 600,
+  background: 'rgba(100,116,139,0.1)', color: '#94a3b8',
+  border: '1px solid rgba(100,116,139,0.15)',
+  cursor: 'pointer', flex: 1,
+};
 
 function KeyChangeItem({ item, type }) {
   const [expanded, setExpanded] = useState(false);
@@ -133,8 +108,9 @@ function KeyChangeItem({ item, type }) {
 }
 
 function KeyChangeList({ items, type }) {
-  const [showAll, setShowAll] = useState(false);
-  const visible = showAll ? items : items.slice(0, DEFAULT_SHOW_COUNT);
+  const [visibleCount, setVisibleCount] = useState(DEFAULT_SHOW_COUNT);
+  const visible = items.slice(0, visibleCount);
+  const remaining = items.length - visibleCount;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -143,11 +119,20 @@ function KeyChangeList({ items, type }) {
       )) : (
         <p style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', padding: '12px 0' }}>없음</p>
       )}
-      {!showAll && (
-        <ShowMoreButton total={items.length} visible={visible.length} onClick={() => setShowAll(true)} />
+      {remaining > 0 && (
+        <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+          <button onClick={() => setVisibleCount(v => v + PAGE_SIZE)} style={listBtnStyle}>
+            +{Math.min(remaining, PAGE_SIZE)}건 더보기
+          </button>
+          <button onClick={() => setVisibleCount(items.length)} style={listBtnStyle}>
+            전체보기 ({items.length}건)
+          </button>
+        </div>
       )}
-      {showAll && items.length > DEFAULT_SHOW_COUNT && (
-        <ShowLessButton onClick={() => setShowAll(false)} />
+      {visibleCount > DEFAULT_SHOW_COUNT && remaining <= 0 && (
+        <button onClick={() => setVisibleCount(DEFAULT_SHOW_COUNT)} style={{ ...listBtnStyle, marginTop: '6px' }}>
+          접기
+        </button>
       )}
     </div>
   );
@@ -200,7 +185,7 @@ const dotColors = {
 
 export default function AnalysisSummary({ result }) {
   const [threshold, setThreshold] = useState(100000);
-  const [showAllLines, setShowAllLines] = useState(false);
+  const [visibleLineCount, setVisibleLineCount] = useState(DEFAULT_SHOW_COUNT);
   const lines = generateSummaryLines(result);
 
   const m1Label = formatMonthLabel(result.month1.label);
@@ -216,7 +201,8 @@ export default function AnalysisSummary({ result }) {
 
   const hasKeyChanges = result.newItems.length > 0 || result.removedItems.length > 0;
 
-  const visibleLines = showAllLines ? lines : lines.slice(0, DEFAULT_SHOW_COUNT);
+  const visibleLines = lines.slice(0, visibleLineCount);
+  const remainingLines = lines.length - visibleLineCount;
 
   return (
     <motion.div
@@ -334,24 +320,30 @@ export default function AnalysisSummary({ result }) {
         </div>
 
         {/* Show more / less for summary lines */}
-        {lines.length > DEFAULT_SHOW_COUNT && (
+        {remainingLines > 0 && (
+          <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+            <button
+              onClick={() => setVisibleLineCount(v => v + PAGE_SIZE)}
+              style={{ ...listBtnStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+            >
+              <ChevronDown style={{ width: '14px', height: '14px' }} />
+              +{Math.min(remainingLines, PAGE_SIZE)}건 더보기
+            </button>
+            <button
+              onClick={() => setVisibleLineCount(lines.length)}
+              style={{ ...listBtnStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+            >
+              전체보기 ({lines.length}건)
+            </button>
+          </div>
+        )}
+        {visibleLineCount > DEFAULT_SHOW_COUNT && remainingLines <= 0 && (
           <button
-            onClick={() => setShowAllLines(!showAllLines)}
-            style={{
-              width: '100%', padding: '10px', marginTop: '12px',
-              borderRadius: '8px', fontSize: '13px', fontWeight: 600,
-              background: 'rgba(100,116,139,0.08)', color: '#94a3b8',
-              border: '1px solid rgba(100,116,139,0.15)',
-              cursor: 'pointer', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', gap: '6px',
-            }}
+            onClick={() => setVisibleLineCount(DEFAULT_SHOW_COUNT)}
+            style={{ ...listBtnStyle, width: '100%', marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
           >
-            <ChevronDown style={{
-              width: '14px', height: '14px',
-              transform: showAllLines ? 'rotate(180deg)' : 'none',
-              transition: 'transform 0.2s',
-            }} />
-            {showAllLines ? '접기' : `+${lines.length - DEFAULT_SHOW_COUNT}건 더보기`}
+            <ChevronDown style={{ width: '14px', height: '14px', transform: 'rotate(180deg)' }} />
+            접기
           </button>
         )}
 
