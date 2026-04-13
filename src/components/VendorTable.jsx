@@ -328,26 +328,25 @@ export default function VendorTable({ result }) {
         </div>
 
         {/* Show more / less buttons */}
-        {remaining > 0 && (
+        {(remaining > 0 || visibleCount > DEFAULT_COUNT) && (
           <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
-            <button onClick={() => setVisibleCount(v => v + PAGE_SIZE)} style={btnStyle}>
-              <ChevronDown style={{ width: '14px', height: '14px' }} />
-              +{Math.min(remaining, PAGE_SIZE)}건 더보기
-            </button>
-            <button onClick={() => setVisibleCount(filtered.length)} style={btnStyle}>
-              전체보기 ({filtered.length}건)
-            </button>
-          </div>
-        )}
-        {visibleCount > DEFAULT_COUNT && remaining <= 0 && filtered.length > DEFAULT_COUNT && (
-          <div style={{ textAlign: 'center', marginTop: '20px' }}>
-            <button
-              onClick={() => setVisibleCount(DEFAULT_COUNT)}
-              style={{ ...btnStyle, flex: 'none', display: 'inline-flex' }}
-            >
-              <ChevronDown style={{ width: '14px', height: '14px', transform: 'rotate(180deg)' }} />
-              접기
-            </button>
+            {remaining > 0 && (
+              <button onClick={() => setVisibleCount(v => v + PAGE_SIZE)} style={btnStyle}>
+                <ChevronDown style={{ width: '14px', height: '14px' }} />
+                +{Math.min(remaining, PAGE_SIZE)}건 더보기
+              </button>
+            )}
+            {remaining > 0 && (
+              <button onClick={() => setVisibleCount(filtered.length)} style={btnStyle}>
+                전체보기 ({filtered.length}건)
+              </button>
+            )}
+            {visibleCount > DEFAULT_COUNT && (
+              <button onClick={() => setVisibleCount(DEFAULT_COUNT)} style={btnStyle}>
+                <ChevronDown style={{ width: '14px', height: '14px', transform: 'rotate(180deg)' }} />
+                접기
+              </button>
+            )}
           </div>
         )}
       </div>

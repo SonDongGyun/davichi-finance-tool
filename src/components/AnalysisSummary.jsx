@@ -119,20 +119,24 @@ function KeyChangeList({ items, type }) {
       )) : (
         <p style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', padding: '12px 0' }}>없음</p>
       )}
-      {remaining > 0 && (
+      {(remaining > 0 || visibleCount > DEFAULT_SHOW_COUNT) && (
         <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-          <button onClick={() => setVisibleCount(v => v + PAGE_SIZE)} style={listBtnStyle}>
-            +{Math.min(remaining, PAGE_SIZE)}건 더보기
-          </button>
-          <button onClick={() => setVisibleCount(items.length)} style={listBtnStyle}>
-            전체보기 ({items.length}건)
-          </button>
+          {remaining > 0 && (
+            <button onClick={() => setVisibleCount(v => v + PAGE_SIZE)} style={listBtnStyle}>
+              +{Math.min(remaining, PAGE_SIZE)}건 더보기
+            </button>
+          )}
+          {remaining > 0 && (
+            <button onClick={() => setVisibleCount(items.length)} style={listBtnStyle}>
+              전체보기 ({items.length}건)
+            </button>
+          )}
+          {visibleCount > DEFAULT_SHOW_COUNT && (
+            <button onClick={() => setVisibleCount(DEFAULT_SHOW_COUNT)} style={listBtnStyle}>
+              접기
+            </button>
+          )}
         </div>
-      )}
-      {visibleCount > DEFAULT_SHOW_COUNT && remaining <= 0 && (
-        <button onClick={() => setVisibleCount(DEFAULT_SHOW_COUNT)} style={{ ...listBtnStyle, marginTop: '6px' }}>
-          접기
-        </button>
       )}
     </div>
   );
@@ -389,31 +393,35 @@ export default function AnalysisSummary({ result }) {
         </div>
 
         {/* Show more / less */}
-        {remainingLines > 0 && (
+        {(remainingLines > 0 || visibleLineCount > DEFAULT_SHOW_COUNT) && (
           <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-            <button
-              onClick={() => setVisibleLineCount(v => v + PAGE_SIZE)}
-              style={{ ...listBtnStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-            >
-              <ChevronDown style={{ width: '14px', height: '14px' }} />
-              +{Math.min(remainingLines, PAGE_SIZE)}건 더보기
-            </button>
-            <button
-              onClick={() => setVisibleLineCount(lines.length)}
-              style={{ ...listBtnStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-            >
-              전체보기 ({lines.length}건)
-            </button>
+            {remainingLines > 0 && (
+              <button
+                onClick={() => setVisibleLineCount(v => v + PAGE_SIZE)}
+                style={{ ...listBtnStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <ChevronDown style={{ width: '14px', height: '14px' }} />
+                +{Math.min(remainingLines, PAGE_SIZE)}건 더보기
+              </button>
+            )}
+            {remainingLines > 0 && (
+              <button
+                onClick={() => setVisibleLineCount(lines.length)}
+                style={{ ...listBtnStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                전체보기 ({lines.length}건)
+              </button>
+            )}
+            {visibleLineCount > DEFAULT_SHOW_COUNT && (
+              <button
+                onClick={() => setVisibleLineCount(DEFAULT_SHOW_COUNT)}
+                style={{ ...listBtnStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <ChevronDown style={{ width: '14px', height: '14px', transform: 'rotate(180deg)' }} />
+                접기
+              </button>
+            )}
           </div>
-        )}
-        {visibleLineCount > DEFAULT_SHOW_COUNT && remainingLines <= 0 && (
-          <button
-            onClick={() => setVisibleLineCount(DEFAULT_SHOW_COUNT)}
-            style={{ ...listBtnStyle, width: '100%', marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-          >
-            <ChevronDown style={{ width: '14px', height: '14px', transform: 'rotate(180deg)' }} />
-            접기
-          </button>
         )}
 
         {lines.length === 0 && !hasKeyChanges && (
