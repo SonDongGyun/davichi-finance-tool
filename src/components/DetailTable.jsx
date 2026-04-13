@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, Filter, ArrowUpRight, ArrowDownRight, Plus, Minus, Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, Filter, ArrowUpRight, ArrowDownRight, Plus, Minus, Search, X } from 'lucide-react';
 import { formatMoney, formatMonthLabel } from '../utils/excelParser';
 
 const statusStyles = {
@@ -147,12 +147,25 @@ export default function DetailTable({ result }) {
               onKeyDown={(e) => { if (e.key === 'Enter') setSearchTerm(searchInput); }}
               placeholder="카테고리 검색 (Enter)"
               style={{
-                paddingLeft: '36px', paddingRight: '16px', paddingTop: '10px', paddingBottom: '10px',
+                paddingLeft: '36px', paddingRight: searchTerm ? '36px' : '16px', paddingTop: '10px', paddingBottom: '10px',
                 borderRadius: '8px', background: 'rgba(15,23,42,0.6)',
-                border: '1px solid rgba(100,116,139,0.3)',
+                border: searchTerm ? '1px solid rgba(96,165,250,0.4)' : '1px solid rgba(100,116,139,0.3)',
                 fontSize: '14px', color: '#e2e8f0', outline: 'none', width: '260px',
               }}
             />
+            {searchTerm && (
+              <button
+                onClick={() => { setSearchInput(''); setSearchTerm(''); }}
+                style={{
+                  position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'rgba(100,116,139,0.3)', border: 'none', borderRadius: '50%',
+                  width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', padding: 0,
+                }}
+              >
+                <X style={{ width: '12px', height: '12px', color: '#cbd5e1' }} />
+              </button>
+            )}
           </div>
         </div>
 
