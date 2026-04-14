@@ -33,15 +33,18 @@ function CustomTooltip({ active, payload, label }) {
 
 function CustomPieTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
+  const entry = payload[0];
+  const pct = entry.payload?.percent ?? entry.percent;
+  const pctStr = pct != null ? (pct * 100).toFixed(1) : '0.0';
   return (
     <div style={{
       background: 'rgba(30,41,59,0.95)', backdropFilter: 'blur(12px)',
       border: '1px solid rgba(99,102,241,0.2)', borderRadius: '10px',
       padding: '12px 16px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
     }}>
-      <p style={{ fontWeight: 600, color: '#e2e8f0', fontSize: '13px' }}>{payload[0].name}</p>
-      <p style={{ fontSize: '12px', color: '#cbd5e1' }}>{formatMoney(payload[0].value)}원</p>
-      <p style={{ fontSize: '12px', color: '#94a3b8' }}>{payload[0].percent != null ? (payload[0].percent * 100).toFixed(1) : 0}%</p>
+      <p style={{ fontWeight: 600, color: '#e2e8f0', fontSize: '13px' }}>{entry.name}</p>
+      <p style={{ fontSize: '12px', color: '#cbd5e1' }}>{formatMoney(entry.value)}원</p>
+      <p style={{ fontSize: '12px', color: '#94a3b8' }}>{pctStr}%</p>
     </div>
   );
 }
