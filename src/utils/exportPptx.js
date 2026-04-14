@@ -23,6 +23,27 @@ function addSlideNumber(slide, num, total) {
   });
 }
 
+function buildCategorySummary(result) {
+  const categories = [...new Set(result.categoryComparison.map(c => c.category))];
+  categories.sort((a, b) => a.localeCompare(b));
+
+  return categories.map(cat => {
+    const catItem = result.categoryComparison.find(c => c.category === cat);
+    const vendors = result.vendorComparison.filter(v => v.category === cat);
+    return {
+      category: cat,
+      prevAmount: catItem?.prevAmount || 0,
+      currAmount: catItem?.currAmount || 0,
+      diff: catItem?.diff || 0,
+      pctChange: catItem?.pctChange || 0,
+      status: catItem?.status || 'unchanged',
+      vendorCount: vendors.length,
+      newVendors: vendors.filter(v => v.status === 'new').length,
+      removedVendors: vendors.filter(v => v.status === 'removed').length,
+    };
+  });
+}
+
 export function exportPptx(result) {
   const pptx = new PptxGenJS();
   pptx.layout = 'LAYOUT_WIDE';
@@ -72,7 +93,6 @@ export function exportPptx(result) {
     fontSize: 24, fontFace: FONT, color: TEXT, bold: true,
   });
 
-  // 3 요약 카드
   const cards = [
     { label: m1, value: `${formatMoney(result.month1.total)}`, sub: `${result.month1.count}건`, accent: '475569' },
     { label: m2, value: `${formatMoney(result.month2.total)}`, sub: `${result.month2.count}건`, accent: BLUE },
@@ -91,7 +111,6 @@ export function exportPptx(result) {
     s2.addText(c.sub, { x, y: 2.35, w: 3.4, h: 0.35, fontSize: 13, color: c.accent, align: 'center', bold: true, fontFace: FONT });
   });
 
-  // 4 변동 카운트 카드
   const changes = [
     { label: '신규 항목', count: result.newItems.length, color: BLUE },
     { label: '제거 항목', count: result.removedItems.length, color: ORANGE },
@@ -137,7 +156,7 @@ export function exportPptx(result) {
     fontSize: 10, color: 'CBD5E1', fontFace: FONT, lineSpacing: 18,
   });
 
-  // ═══════════ 슬라이드 3+: 분석 상세 ═══════════
+  // ═══════════ 분석 상세 (카테고리 총평만) ═══════════
   const lines = [];
 
   if (result.totalDiff !== 0) {
@@ -156,20 +175,6 @@ export function exportPptx(result) {
   });
   result.decreasedItems.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).forEach(item => {
     lines.push({ color: GREEN, tag: '감소', text: `${item.category}: ${formatMoney(item.prevAmount)}원 → ${formatMoney(item.currAmount)}원 (-${formatMoney(Math.abs(item.diff))}원, ${item.pctChange}%)` });
-  });
-
-  // 거래처 변동
-  result.vendorComparison.forEach(v => {
-    const cat = v.category && v.category !== '미분류' ? `[${v.category}] ` : '';
-    if (v.status === 'new') {
-      lines.push({ color: CYAN, tag: '거래처+', text: `${cat}"${v.vendor}" 신규 거래 발생, ${formatMoney(v.currAmount)}원 지출.` });
-    } else if (v.status === 'removed') {
-      lines.push({ color: ORANGE, tag: '거래처-', text: `${cat}"${v.vendor}" ${m2} 거래 없음 (전월 ${formatMoney(v.prevAmount)}원).` });
-    } else if (v.diff > 0) {
-      lines.push({ color: RED, tag: '거래처', text: `${cat}"${v.vendor}" +${formatMoney(v.diff)}원 증가.` });
-    } else if (v.diff < 0) {
-      lines.push({ color: GREEN, tag: '거래처', text: `${cat}"${v.vendor}" -${formatMoney(Math.abs(v.diff))}원 감소.` });
-    }
   });
 
   const maxLines = 13;
@@ -203,14 +208,16 @@ export function exportPptx(result) {
     });
   }
 
-  // ═══════════ 카테고리별 비교 테이블 ═══════════
-  const catRows = result.categoryComparison.map(c => [
+  // ═══════════ 계정과목별 총평 테이블 ═══════════
+  const catSummary = buildCategorySummary(result);
+  const catRows = catSummary.map(c => [
     { text: c.category, options: { fontSize: 9, color: TEXT, fontFace: FONT } },
     { text: `${formatMoney(c.prevAmount)}원`, options: { fontSize: 9, color: 'CBD5E1', align: 'right', fontFace: FONT } },
     { text: `${formatMoney(c.currAmount)}원`, options: { fontSize: 9, color: 'CBD5E1', align: 'right', fontFace: FONT } },
     { text: `${c.diff >= 0 ? '+' : ''}${formatMoney(c.diff)}원`, options: { fontSize: 9, color: c.diff > 0 ? RED : c.diff < 0 ? GREEN : SUB, align: 'right', bold: true, fontFace: FONT } },
     { text: `${c.pctChange >= 0 ? '+' : ''}${c.pctChange}%`, options: { fontSize: 9, color: c.diff > 0 ? RED : c.diff < 0 ? GREEN : SUB, align: 'right', fontFace: FONT } },
     { text: STATUS_KR[c.status], options: { fontSize: 9, color: c.status === 'new' ? BLUE : c.status === 'removed' ? ORANGE : c.status === 'increased' ? RED : c.status === 'decreased' ? GREEN : SUB, align: 'center', bold: true, fontFace: FONT } },
+    { text: c.vendorCount > 0 ? `${c.vendorCount}건 (신규${c.newVendors} 제거${c.removedVendors})` : '-', options: { fontSize: 8, color: SUB, align: 'center', fontFace: FONT } },
   ]);
 
   const rowsPerPage = 14;
@@ -220,18 +227,19 @@ export function exportPptx(result) {
     slide.background = { color: BG };
     slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 0.08, fill: { color: BLUE } });
 
-    slide.addText(i === 0 ? '카테고리별 비교' : '카테고리별 비교 (계속)', {
+    slide.addText(i === 0 ? '계정과목별 총평' : '계정과목별 총평 (계속)', {
       x: 0.8, y: 0.3, w: 8, h: 0.5,
       fontSize: 22, fontFace: FONT, color: TEXT, bold: true,
     });
 
     const headerRow = [
-      { text: '카테고리', options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: BLUE }, fontFace: FONT } },
+      { text: '계정과목', options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: BLUE }, fontFace: FONT } },
       { text: m1, options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: BLUE }, align: 'right', fontFace: FONT } },
       { text: m2, options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: BLUE }, align: 'right', fontFace: FONT } },
       { text: '증감액', options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: BLUE }, align: 'right', fontFace: FONT } },
       { text: '증감률', options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: BLUE }, align: 'right', fontFace: FONT } },
       { text: '상태', options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: BLUE }, align: 'center', fontFace: FONT } },
+      { text: '거래처 변동', options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: BLUE }, align: 'center', fontFace: FONT } },
     ];
 
     const chunk = catRows.slice(i, i + rowsPerPage);
@@ -242,56 +250,10 @@ export function exportPptx(result) {
 
     slide.addTable(tableRows, {
       x: 0.5, y: 1.0, w: 12.3,
-      colW: [3.5, 2, 2, 2, 1.3, 1.5],
+      colW: [2.8, 1.8, 1.8, 1.8, 1.1, 1.2, 1.8],
       border: { type: 'solid', pt: 0.5, color: BORDER },
       rowH: 0.33,
     });
-  }
-
-  // ═══════════ 거래처별 변동 테이블 ═══════════
-  if (result.vendorComparison.length > 0) {
-    const vendorRows = result.vendorComparison.map(v => [
-      { text: v.category || '미분류', options: { fontSize: 9, color: '94A3B8', fontFace: FONT } },
-      { text: v.vendor, options: { fontSize: 9, color: TEXT, fontFace: FONT } },
-      { text: `${formatMoney(v.prevAmount)}원`, options: { fontSize: 9, color: 'CBD5E1', align: 'right', fontFace: FONT } },
-      { text: `${formatMoney(v.currAmount)}원`, options: { fontSize: 9, color: 'CBD5E1', align: 'right', fontFace: FONT } },
-      { text: `${v.diff >= 0 ? '+' : ''}${formatMoney(v.diff)}원`, options: { fontSize: 9, color: v.diff > 0 ? RED : GREEN, align: 'right', bold: true, fontFace: FONT } },
-      { text: STATUS_KR[v.status] || '-', options: { fontSize: 9, color: v.status === 'new' ? BLUE : v.status === 'removed' ? ORANGE : v.diff > 0 ? RED : GREEN, align: 'center', bold: true, fontFace: FONT } },
-    ]);
-
-    for (let i = 0; i < vendorRows.length; i += rowsPerPage) {
-      const slide = pptx.addSlide();
-      allSlides.push(slide);
-      slide.background = { color: BG };
-      slide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 13.33, h: 0.08, fill: { color: CYAN } });
-
-      slide.addText(i === 0 ? '거래처별 변동 내역' : '거래처별 변동 내역 (계속)', {
-        x: 0.8, y: 0.3, w: 8, h: 0.5,
-        fontSize: 22, fontFace: FONT, color: TEXT, bold: true,
-      });
-
-      const headerRow = [
-        { text: '계정과목', options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: CYAN }, fontFace: FONT } },
-        { text: '거래처', options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: CYAN }, fontFace: FONT } },
-        { text: m1, options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: CYAN }, align: 'right', fontFace: FONT } },
-        { text: m2, options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: CYAN }, align: 'right', fontFace: FONT } },
-        { text: '증감액', options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: CYAN }, align: 'right', fontFace: FONT } },
-        { text: '상태', options: { fontSize: 9, bold: true, color: 'FFFFFF', fill: { color: CYAN }, align: 'center', fontFace: FONT } },
-      ];
-
-      const chunk = vendorRows.slice(i, i + rowsPerPage);
-      const tableRows = [headerRow, ...chunk.map((row, idx) => row.map(cell => ({
-        ...cell,
-        options: { ...cell.options, fill: { color: idx % 2 === 0 ? CARD_BG : '172033' } },
-      })))];
-
-      slide.addTable(tableRows, {
-        x: 0.5, y: 1.0, w: 12.3,
-        colW: [2.5, 3, 1.8, 1.8, 1.8, 1.4],
-        border: { type: 'solid', pt: 0.5, color: BORDER },
-        rowH: 0.33,
-      });
-    }
   }
 
   // ═══════════ 마지막 슬라이드 ═══════════
