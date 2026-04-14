@@ -31,11 +31,10 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-function CustomPieTooltip({ active, payload }) {
+function CustomPieTooltip({ active, payload, total }) {
   if (!active || !payload?.length) return null;
   const entry = payload[0];
-  const pct = entry.payload?.percent ?? entry.percent;
-  const pctStr = pct != null ? (pct * 100).toFixed(1) : '0.0';
+  const pct = total > 0 ? ((entry.value / total) * 100).toFixed(1) : '0.0';
   return (
     <div style={{
       background: 'rgba(30,41,59,0.95)', backdropFilter: 'blur(12px)',
@@ -44,7 +43,7 @@ function CustomPieTooltip({ active, payload }) {
     }}>
       <p style={{ fontWeight: 600, color: '#e2e8f0', fontSize: '13px' }}>{entry.name}</p>
       <p style={{ fontSize: '12px', color: '#cbd5e1' }}>{formatMoney(entry.value)}원</p>
-      <p style={{ fontSize: '12px', color: '#94a3b8' }}>{pctStr}%</p>
+      <p style={{ fontSize: '12px', color: '#94a3b8' }}>{pct}%</p>
     </div>
   );
 }
@@ -61,6 +60,8 @@ export default function AnalysisCharts({ result }) {
 
   const pieData1 = result.categoryComparison.filter(c => c.prevAmount > 0).slice(0, 8).map(c => ({ name: c.category, value: c.prevAmount }));
   const pieData2 = result.categoryComparison.filter(c => c.currAmount > 0).slice(0, 8).map(c => ({ name: c.category, value: c.currAmount }));
+  const pieTotal1 = pieData1.reduce((s, d) => s + d.value, 0);
+  const pieTotal2 = pieData2.reduce((s, d) => s + d.value, 0);
 
   const m1Label = formatMonthLabel(result.month1.label);
   const m2Label = formatMonthLabel(result.month2.label);
@@ -132,7 +133,7 @@ export default function AnalysisCharts({ result }) {
                       label={({ name, percent }) => (percent || 0) > 0.05 ? `${name.substring(0, 6)} ${((percent || 0) * 100).toFixed(0)}%` : ''} labelLine={false}>
                       {pieData1.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
-                    <Tooltip content={<CustomPieTooltip />} />
+                    <Tooltip content={<CustomPieTooltip total={pieTotal1} />} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -144,7 +145,7 @@ export default function AnalysisCharts({ result }) {
                       label={({ name, percent }) => (percent || 0) > 0.05 ? `${name.substring(0, 6)} ${((percent || 0) * 100).toFixed(0)}%` : ''} labelLine={false}>
                       {pieData2.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
-                    <Tooltip content={<CustomPieTooltip />} />
+                    <Tooltip content={<CustomPieTooltip total={pieTotal2} />} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
