@@ -32,7 +32,7 @@ export default function Header({ isCompact }) {
           {!mobile && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#94a3b8' }}>
               <Sparkles style={{ width: '16px', height: '16px', color: '#a78bfa' }} />
-              <span>월별 비용 증감 분석</span>
+              <span>기간·연도별 비용 증감 분석</span>
             </div>
           )}
         </div>
@@ -50,8 +50,8 @@ export default function Header({ isCompact }) {
     },
     {
       icon: <TrendingUp style={{ width: '28px', height: '28px' }} />,
-      title: '월별 비교 분석',
-      desc: '두 달의 비용을 비교하여 신규, 소멸, 증감 항목을 자동으로 감지합니다.',
+      title: '기간·연도별 비교',
+      desc: '월·기간 단위 비교는 물론 시트가 나뉜 연도 간 비교까지 한 번에 수행합니다.',
       gradient: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
       shadow: '0 8px 24px rgba(139,92,246,0.2)',
     },
@@ -109,7 +109,7 @@ export default function Header({ isCompact }) {
             padding: mobile ? '0 8px' : 0,
           }}
         >
-          월별 재무 데이터를 업로드하면 비용 증감을 자동으로 분석하고,
+          재무 데이터를 업로드하면 월·기간·연도 단위로 비용 증감을 자동으로 분석하고,
           신규/소멸 항목과 주요 변동 사항을 한눈에 보여드립니다.
         </motion.p>
 
