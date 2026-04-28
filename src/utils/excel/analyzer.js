@@ -2,14 +2,15 @@ import { parseDate, parseAmount } from './parser';
 import { buildRangeKey } from '../formatters';
 import { UNCATEGORIZED, UNKNOWN_VENDOR } from '../../constants/defaults';
 
+function monthKeyOf(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export function extractMonths(rows, dateColumn) {
   const months = new Set();
   rows.forEach(row => {
     const d = parseDate(row[dateColumn]);
-    if (d) {
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      months.add(key);
-    }
+    if (d) months.add(monthKeyOf(d));
   });
   return Array.from(months).sort();
 }
@@ -24,7 +25,7 @@ export function analyzeSheets(rowsBySheet, dateColumn) {
       if (!d) return;
       const y = d.getFullYear();
       yearCount[y] = (yearCount[y] || 0) + 1;
-      months.add(`${y}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+      months.add(monthKeyOf(d));
     });
 
     let dominantYear = null;
@@ -67,57 +68,78 @@ function labelFromMonths(months) {
   return buildRangeKey(sorted[0], sorted[sorted.length - 1]);
 }
 
-export function analyzeMonthlyChanges(rows, config) {
-  const { dateColumn, amountColumns, categoryColumn, descriptionColumn, vendorColumn } = config;
+function buildEntry(row, date, config) {
+  const { amountColumns, categoryColumn, descriptionColumn, vendorColumn } = config;
 
-  const months1 = resolveMonths(config, 1);
-  const months2 = resolveMonths(config, 2);
-  const m1Set = new Set(months1);
-  const m2Set = new Set(months2);
+  const amount = amountColumns.debit
+    ? parseAmount(row[amountColumns.debit]) - parseAmount(row[amountColumns.credit])
+    : parseAmount(row[amountColumns.amount]);
+
+  const rawCategory = categoryColumn ? String(row[categoryColumn] ?? '').trim() : '';
+  const rawDescription = descriptionColumn ? String(row[descriptionColumn] ?? '').trim() : '';
+  const rawVendor = vendorColumn ? String(row[vendorColumn] ?? '').trim() : '';
+
+  return {
+    ...row,
+    _amount: amount,
+    _category: rawCategory || UNCATEGORIZED,
+    _description: rawDescription,
+    _vendor: rawVendor,
+    _date: date,
+  };
+}
+
+// Prepare entries from rows: filters by allowed months, parses fields, counts skipped (unparseable date) rows.
+function prepareEntries(rows, config, allowedMonths) {
+  const monthSet = new Set(allowedMonths);
+  const entries = [];
+  let skipped = 0;
+
+  rows.forEach(row => {
+    const d = parseDate(row[config.dateColumn]);
+    if (!d) {
+      skipped++;
+      return;
+    }
+    if (monthSet.size > 0 && !monthSet.has(monthKeyOf(d))) return;
+    entries.push(buildEntry(row, d, config));
+  });
+
+  return { entries, skipped };
+}
+
+function aggregateByCategory(entries) {
+  const map = {};
+  entries.forEach(e => {
+    if (!map[e._category]) map[e._category] = { total: 0, items: [] };
+    map[e._category].total += e._amount;
+    map[e._category].items.push(e);
+  });
+  return map;
+}
+
+function aggregateByVendor(entries) {
+  const map = {};
+  entries.forEach(e => {
+    const vendor = e._vendor || e._description || UNKNOWN_VENDOR;
+    const category = e._category || UNCATEGORIZED;
+    const key = `${category}|||${vendor}`;
+    if (!map[key]) map[key] = { total: 0, count: 0, category, vendor, items: [] };
+    map[key].total += e._amount;
+    map[key].count++;
+    map[key].items.push(e);
+  });
+  return map;
+}
+
+function compareEntries({ entries1, entries2, months1, months2, skipped }) {
   const label1 = labelFromMonths(months1);
   const label2 = labelFromMonths(months2);
 
-  // Group data by month
-  const m1Data = [];
-  const m2Data = [];
-
-  rows.forEach(row => {
-    const d = parseDate(row[dateColumn]);
-    if (!d) return;
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-
-    const amount = amountColumns.debit
-      ? parseAmount(row[amountColumns.debit]) - parseAmount(row[amountColumns.credit] || 0)
-      : parseAmount(row[amountColumns.amount]);
-
-    const category = categoryColumn ? String(row[categoryColumn] || UNCATEGORIZED) : UNCATEGORIZED;
-    const description = descriptionColumn ? String(row[descriptionColumn] || '') : '';
-    const vendor = vendorColumn ? String(row[vendorColumn] || '') : '';
-
-    const entry = { ...row, _amount: amount, _category: category, _description: description, _vendor: vendor, _date: d };
-
-    if (m1Set.has(key)) m1Data.push(entry);
-    else if (m2Set.has(key)) m2Data.push(entry);
-  });
-
-  // Category-level analysis
-  const m1Categories = {};
-  const m2Categories = {};
-
-  m1Data.forEach(e => {
-    if (!m1Categories[e._category]) m1Categories[e._category] = { total: 0, items: [] };
-    m1Categories[e._category].total += e._amount;
-    m1Categories[e._category].items.push(e);
-  });
-
-  m2Data.forEach(e => {
-    if (!m2Categories[e._category]) m2Categories[e._category] = { total: 0, items: [] };
-    m2Categories[e._category].total += e._amount;
-    m2Categories[e._category].items.push(e);
-  });
+  const m1Categories = aggregateByCategory(entries1);
+  const m2Categories = aggregateByCategory(entries2);
 
   const allCategories = new Set([...Object.keys(m1Categories), ...Object.keys(m2Categories)]);
-
   const categoryComparison = [];
   allCategories.forEach(cat => {
     const prev = m1Categories[cat]?.total || 0;
@@ -143,32 +165,10 @@ export function analyzeMonthlyChanges(rows, config) {
       currItems: m2Categories[cat]?.items || [],
     });
   });
-
   categoryComparison.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
 
-  // Vendor-level analysis (grouped by category + vendor)
-  const m1Vendors = {};
-  const m2Vendors = {};
-
-  m1Data.forEach(e => {
-    const vendor = e._vendor || e._description || UNKNOWN_VENDOR;
-    const category = e._category || UNCATEGORIZED;
-    const key = `${category}|||${vendor}`;
-    if (!m1Vendors[key]) m1Vendors[key] = { total: 0, count: 0, category, vendor, items: [] };
-    m1Vendors[key].total += e._amount;
-    m1Vendors[key].count++;
-    m1Vendors[key].items.push(e);
-  });
-
-  m2Data.forEach(e => {
-    const vendor = e._vendor || e._description || UNKNOWN_VENDOR;
-    const category = e._category || UNCATEGORIZED;
-    const key = `${category}|||${vendor}`;
-    if (!m2Vendors[key]) m2Vendors[key] = { total: 0, count: 0, category, vendor, items: [] };
-    m2Vendors[key].total += e._amount;
-    m2Vendors[key].count++;
-    m2Vendors[key].items.push(e);
-  });
+  const m1Vendors = aggregateByVendor(entries1);
+  const m2Vendors = aggregateByVendor(entries2);
 
   const allVendorKeys = new Set([...Object.keys(m1Vendors), ...Object.keys(m2Vendors)]);
   const vendorComparison = [];
@@ -203,13 +203,12 @@ export function analyzeMonthlyChanges(rows, config) {
     return Math.abs(b.diff) - Math.abs(a.diff);
   });
 
-  // Summary stats
-  const m1Total = m1Data.reduce((s, e) => s + e._amount, 0);
-  const m2Total = m2Data.reduce((s, e) => s + e._amount, 0);
+  const m1Total = entries1.reduce((s, e) => s + e._amount, 0);
+  const m2Total = entries2.reduce((s, e) => s + e._amount, 0);
 
   return {
-    month1: { label: label1, total: m1Total, count: m1Data.length, months: months1 },
-    month2: { label: label2, total: m2Total, count: m2Data.length, months: months2 },
+    month1: { label: label1, total: m1Total, count: entries1.length, months: months1 },
+    month2: { label: label2, total: m2Total, count: entries2.length, months: months2 },
     totalDiff: m2Total - m1Total,
     totalPctChange: m1Total > 0 ? Math.round(((m2Total - m1Total) / m1Total) * 1000) / 10 : 0,
     categoryComparison,
@@ -218,5 +217,30 @@ export function analyzeMonthlyChanges(rows, config) {
     removedItems: categoryComparison.filter(c => c.status === 'removed'),
     increasedItems: categoryComparison.filter(c => c.status === 'increased'),
     decreasedItems: categoryComparison.filter(c => c.status === 'decreased'),
+    skippedRowCount: skipped,
   };
+}
+
+// Monthly mode: single source of rows, partitioned by month keys.
+// Same rows are scanned twice (once per side); skipped (unparseable date) count is identical
+// for both passes, so we keep only the first to avoid double-counting.
+export function analyzeMonthlyChanges(rows, config) {
+  const months1 = resolveMonths(config, 1);
+  const months2 = resolveMonths(config, 2);
+  const { entries: entries1, skipped } = prepareEntries(rows, config, months1);
+  const { entries: entries2 } = prepareEntries(rows, config, months2);
+  return compareEntries({ entries1, entries2, months1, months2, skipped });
+}
+
+// Sheet mode: rows already partitioned by source sheet, then filtered by months per side.
+export function analyzeSheetComparison(rows1, rows2, config, months1, months2) {
+  const { entries: entries1, skipped: skipped1 } = prepareEntries(rows1, config, months1);
+  const { entries: entries2, skipped: skipped2 } = prepareEntries(rows2, config, months2);
+  return compareEntries({
+    entries1,
+    entries2,
+    months1,
+    months2,
+    skipped: skipped1 + skipped2,
+  });
 }

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Plus, Minus, ArrowUpRight, ArrowDownRight, Equal } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Minus, ArrowUpRight, ArrowDownRight, Equal, AlertTriangle } from 'lucide-react';
 import { formatMoney, formatMonthLabel } from '../utils/formatters';
 import { useEffect, useState } from 'react';
 
@@ -31,7 +31,7 @@ function AnimatedNumber({ value, prefix = '', suffix = '' }) {
 }
 
 export default function SummaryCards({ result }) {
-  const { month1, month2, totalDiff, totalPctChange, newItems, removedItems, increasedItems, decreasedItems } = result;
+  const { month1, month2, totalDiff, totalPctChange, newItems, removedItems, increasedItems, decreasedItems, skippedRowCount } = result;
 
   const cards = [
     {
@@ -140,6 +140,29 @@ export default function SummaryCards({ result }) {
           </motion.div>
         ))}
       </div>
+
+      {skippedRowCount > 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          role="status"
+          style={{
+            marginTop: '16px',
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '12px 16px', borderRadius: '10px',
+            background: 'rgba(251,191,36,0.08)',
+            border: '1px solid rgba(251,191,36,0.25)',
+            color: '#fcd34d', fontSize: '13px',
+          }}
+        >
+          <AlertTriangle style={{ width: '16px', height: '16px', flexShrink: 0 }} />
+          <span>
+            날짜를 인식하지 못한 <strong>{skippedRowCount.toLocaleString('ko-KR')}건</strong>이 분석에서 제외되었어요.
+            합계가 원본 엑셀과 다를 수 있다면 날짜 컬럼 형식을 확인해주세요.
+          </span>
+        </motion.div>
+      )}
     </motion.div>
   );
 }

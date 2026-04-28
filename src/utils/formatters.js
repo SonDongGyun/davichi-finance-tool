@@ -45,3 +45,9 @@ export function buildRangeKey(startKey, endKey) {
   const endIdx = ey * 12 + (em - 1);
   return startIdx <= endIdx ? `${startKey}~${endKey}` : `${endKey}~${startKey}`;
 }
+
+export function monthRangesOverlap(monthsA, monthsB) {
+  if (!Array.isArray(monthsA) || !Array.isArray(monthsB)) return false;
+  const set = new Set(monthsA);
+  return monthsB.some(m => set.has(m));
+}

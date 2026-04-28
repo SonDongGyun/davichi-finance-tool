@@ -15,8 +15,8 @@ import VendorTable from './components/VendorTable';
 import ExportButtons from './components/ExportButtons';
 import PasswordModal from './components/PasswordModal';
 import { parseExcelFile } from './utils/excel/parser';
-import { extractMonths, analyzeSheets, analyzeMonthlyChanges } from './utils/excel/analyzer';
-import { expandMonthRange } from './utils/formatters';
+import { extractMonths, analyzeSheets, analyzeMonthlyChanges, analyzeSheetComparison } from './utils/excel/analyzer';
+import { expandMonthRange, monthRangesOverlap } from './utils/formatters';
 import { decryptAndParse } from './services/decryptService';
 import { useWindowSize } from './hooks/useWindowSize';
 import {
@@ -153,6 +153,10 @@ function App() {
       const months2 = expandMonthRange(range2.start, range2.end);
       if (months1.length === 0 || months2.length === 0) return;
       if (range1.start === range2.start && range1.end === range2.end) return;
+      if (monthRangesOverlap(months1, months2)) {
+        alert('두 비교 범위가 겹칩니다. 같은 월은 한쪽 기간에만 포함되도록 범위를 조정해주세요.');
+        return;
+      }
 
       const result = analyzeMonthlyChanges(fileData.rows, {
         ...columnConfig,
@@ -169,13 +173,14 @@ function App() {
 
       const sheet1Rows = fileData.rowsBySheet?.[side1.sheetName] || [];
       const sheet2Rows = fileData.rowsBySheet?.[side2.sheetName] || [];
-      const rows = [...sheet1Rows, ...sheet2Rows];
 
-      const result = analyzeMonthlyChanges(rows, {
-        ...columnConfig,
+      const result = analyzeSheetComparison(
+        sheet1Rows,
+        sheet2Rows,
+        columnConfig,
         months1,
         months2,
-      });
+      );
       setAnalysisResult(result);
       setStep(STEP_RESULT);
     }

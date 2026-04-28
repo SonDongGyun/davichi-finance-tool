@@ -82,6 +82,25 @@ export function parseDate(val) {
 
 export function parseAmount(val) {
   if (val === '' || val === null || val === undefined) return 0;
-  if (typeof val === 'number') return val;
-  return Number(String(val).replace(/[,\s원₩]/g, '')) || 0;
+  if (typeof val === 'number') return Number.isFinite(val) ? val : 0;
+
+  let str = String(val).trim();
+  if (str === '' || str === '-') return 0;
+
+  // Korean accounting negative markers (△, ▲): leading sign
+  let sign = 1;
+  if (/^[△▲]/.test(str)) {
+    sign = -1;
+    str = str.replace(/^[△▲]\s*/, '');
+  }
+
+  // Parentheses-wrapped negative: (1,000) → -1000
+  if (/^\(.*\)$/.test(str)) {
+    sign = -sign;
+    str = str.slice(1, -1).trim();
+  }
+
+  const cleaned = str.replace(/[,\s원₩]/g, '');
+  const num = Number(cleaned);
+  return Number.isFinite(num) ? sign * num : 0;
 }
