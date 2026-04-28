@@ -70,7 +70,7 @@ export function parseDate(val) {
   }
 
   // YYYY/MM/DD or YYYY-MM-DD
-  const match = str.match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+  const match = str.match(/(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})/);
   if (match) {
     return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
   }

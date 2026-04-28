@@ -14,14 +14,10 @@ import DetailTable from './components/DetailTable';
 import VendorTable from './components/VendorTable';
 import ExportButtons from './components/ExportButtons';
 import PasswordModal from './components/PasswordModal';
-import {
-  parseExcelFile,
-  decryptAndParse,
-  extractMonths,
-  analyzeSheets,
-  analyzeMonthlyChanges,
-  expandMonthRange,
-} from './utils/excelParser';
+import { parseExcelFile } from './utils/excel/parser';
+import { extractMonths, analyzeSheets, analyzeMonthlyChanges } from './utils/excel/analyzer';
+import { expandMonthRange } from './utils/formatters';
+import { decryptAndParse } from './services/decryptService';
 import { useWindowSize } from './hooks/useWindowSize';
 import {
   STEP_LANDING,
@@ -279,7 +275,7 @@ function App() {
                         </thead>
                         <tbody>
                           {fileData.rows.slice(0, 5).map((row, i) => (
-                            <tr key={i} style={{ borderBottom: '1px solid rgba(15,23,42,0.2)' }}>
+                            <tr key={`preview-${i}-${String(row[fileData.headers[0]] ?? '')}`} style={{ borderBottom: '1px solid rgba(15,23,42,0.2)' }}>
                               {fileData.headers.slice(0, 8).map(h => (
                                 <td key={h} style={{ padding: '8px 12px', color: '#cbd5e1', whiteSpace: 'nowrap', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {String(row[h] || '')}

@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquareText, PlusCircle, MinusCircle, AlertTriangle, ChevronDown, SlidersHorizontal } from 'lucide-react';
-import { formatMoney, formatMonthLabel } from '../utils/excelParser';
+import { formatMoney, formatMonthLabel } from '../utils/formatters';
+import { UNCATEGORIZED } from '../constants/defaults';
 import CategoryTabs from './CategoryTabs';
 
 function fmt(amount) {
@@ -105,7 +106,7 @@ function KeyChangeItem({ item, type }) {
               borderTop: `1px solid ${isNew ? 'rgba(59,130,246,0.12)' : 'rgba(249,115,22,0.12)'}`,
             }}>
               {items.map((entry, i) => (
-                <div key={i} style={{
+                <div key={`${type}-${i}-${entry._amount}`} style={{
                   display: 'flex', justifyContent: 'space-between',
                   fontSize: '12px', padding: '4px 0', color: '#94a3b8',
                 }}>
@@ -179,16 +180,16 @@ function generateSummaryLines(result) {
     lines.push({ type: 'neutral', category: null, text: `${m1Label}과 ${m2Label}의 총 비용이 동일합니다.` });
   }
 
-  result.increasedItems.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).forEach(item => {
+  [...result.increasedItems].sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).forEach(item => {
     lines.push({ type: 'increase', category: item.category, text: `${item.category} 비용이 ${fmt(item.prevAmount)}원에서 ${fmt(item.currAmount)}원으로 ${fmt(item.diff)}원 증가 (+${item.pctChange}%).` });
   });
 
-  result.decreasedItems.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).forEach(item => {
+  [...result.decreasedItems].sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)).forEach(item => {
     lines.push({ type: 'decrease', category: item.category, text: `${item.category} 비용이 ${fmt(item.prevAmount)}원에서 ${fmt(item.currAmount)}원으로 ${fmt(Math.abs(item.diff))}원 감소 (${item.pctChange}%).` });
   });
 
   result.vendorComparison.forEach(v => {
-    const catLabel = v.category && v.category !== '미분류' ? `[${v.category}] ` : '';
+    const catLabel = v.category && v.category !== UNCATEGORIZED ? `[${v.category}] ` : '';
     if (v.status === 'new') {
       lines.push({ type: 'new', category: v.category, text: `${catLabel}거래처 "${v.vendor}" 신규 거래 발생, ${fmt(v.currAmount)}원 지출.` });
     } else if (v.status === 'removed') {
@@ -253,10 +254,8 @@ export default function AnalysisSummary({ result }) {
   const [visibleLineCount, setVisibleLineCount] = useState(DEFAULT_SHOW_COUNT);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const sectionRef = useRef(null);
-  const allLines = generateSummaryLines(result);
 
-  const m1Label = formatMonthLabel(result.month1.label);
-  const m2Label = formatMonthLabel(result.month2.label);
+  const allLines = useMemo(() => generateSummaryLines(result), [result]);
 
   const categories = useMemo(() => {
     const cats = [...new Set(result.categoryComparison.map(c => c.category))];
@@ -269,20 +268,25 @@ export default function AnalysisSummary({ result }) {
     setVisibleLineCount(DEFAULT_SHOW_COUNT);
   };
 
-  // Filter by selected category
-  const lines = selectedCategory === 'all'
-    ? allLines
-    : allLines.filter(l => l.category === null || l.category === selectedCategory);
+  const lines = useMemo(() => (
+    selectedCategory === 'all'
+      ? allLines
+      : allLines.filter(l => l.category === null || l.category === selectedCategory)
+  ), [allLines, selectedCategory]);
 
-  const newItems = result.newItems
-    .filter(item => item.currAmount >= threshold)
-    .filter(item => selectedCategory === 'all' || item.category === selectedCategory)
-    .sort((a, b) => b.currAmount - a.currAmount);
+  const newItems = useMemo(() => (
+    result.newItems
+      .filter(item => item.currAmount >= threshold)
+      .filter(item => selectedCategory === 'all' || item.category === selectedCategory)
+      .sort((a, b) => b.currAmount - a.currAmount)
+  ), [result.newItems, threshold, selectedCategory]);
 
-  const removedItems = result.removedItems
-    .filter(item => item.prevAmount >= threshold)
-    .filter(item => selectedCategory === 'all' || item.category === selectedCategory)
-    .sort((a, b) => b.prevAmount - a.prevAmount);
+  const removedItems = useMemo(() => (
+    result.removedItems
+      .filter(item => item.prevAmount >= threshold)
+      .filter(item => selectedCategory === 'all' || item.category === selectedCategory)
+      .sort((a, b) => b.prevAmount - a.prevAmount)
+  ), [result.removedItems, threshold, selectedCategory]);
 
   const hasKeyChanges = newItems.length > 0 || removedItems.length > 0;
 
@@ -397,7 +401,7 @@ export default function AnalysisSummary({ result }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {visibleLines.map((line, i) => (
             <motion.div
-              key={i}
+              key={line.text}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.25, delay: i * 0.04 }}

@@ -1,5 +1,5 @@
 import PptxGenJS from 'pptxgenjs';
-import { formatMoney, formatMonthLabel } from './excelParser';
+import { formatMoney, formatMonthLabel } from './formatters';
 
 const STATUS_KR = { new: '신규', removed: '제거', increased: '증가', decreased: '감소', unchanged: '동일' };
 const BG = '0F172A';

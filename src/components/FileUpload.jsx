@@ -64,6 +64,15 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => !isLoaded && document.getElementById('file-input').click()}
+        role="button"
+        tabIndex={0}
+        aria-label="엑셀 파일 업로드 (드래그 앤 드롭 또는 클릭)"
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && !isLoaded) {
+            e.preventDefault();
+            document.getElementById('file-input').click();
+          }
+        }}
         className={
           isDragging
             ? 'glass'

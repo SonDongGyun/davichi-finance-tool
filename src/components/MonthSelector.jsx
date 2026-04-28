@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Calendar, ArrowRight } from 'lucide-react';
-import { formatMonthLabel } from '../utils/excelParser';
+import { formatMonthLabel } from '../utils/formatters';
 
 const selectStyle = {
   width: '100%',

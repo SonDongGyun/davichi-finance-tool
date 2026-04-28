@@ -4,13 +4,28 @@ import { Lock, Loader2, X } from 'lucide-react';
 
 export default function PasswordModal({ isOpen, onSubmit, onClose, error, isLoading }) {
   const [password, setPassword] = useState('');
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
   const submittingRef = useRef(false);
+
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (!isOpen) setPassword('');
+  }
 
   useEffect(() => {
     if (!isLoading) {
       submittingRef.current = false;
     }
   }, [isLoading]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !isLoading) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isLoading, onClose]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -69,6 +84,7 @@ export default function PasswordModal({ isOpen, onSubmit, onClose, error, isLoad
             </div>
             <button
               onClick={onClose}
+              aria-label="닫기"
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: '#64748b', padding: '4px',
@@ -86,6 +102,7 @@ export default function PasswordModal({ isOpen, onSubmit, onClose, error, isLoad
               onChange={(e) => setPassword(e.target.value)}
               placeholder="암호 입력"
               autoFocus
+              aria-label="파일 암호"
               style={{
                 width: '100%', padding: '14px 16px',
                 borderRadius: '10px',

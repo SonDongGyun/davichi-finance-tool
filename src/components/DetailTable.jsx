@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronUp, Filter, ArrowUpRight, ArrowDownRight, Plus, Minus, Search, X } from 'lucide-react';
-import { formatMoney, formatMonthLabel } from '../utils/excelParser';
+import { formatMoney, formatMonthLabel } from '../utils/formatters';
 
 const statusStyles = {
   new: { label: '신규', color: '#60a5fa', bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.3)', Icon: Plus },
@@ -10,6 +10,14 @@ const statusStyles = {
   decreased: { label: '감소', color: '#34d399', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', Icon: ArrowDownRight },
   unchanged: { label: '동일', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.3)', Icon: null },
 };
+
+const FILTERS = [
+  { key: 'all', label: '전체' },
+  { key: 'new', label: '신규' },
+  { key: 'removed', label: '제거' },
+  { key: 'increased', label: '증가' },
+  { key: 'decreased', label: '감소' },
+];
 
 function StatusBadge({ status }) {
   const s = statusStyles[status];
@@ -38,7 +46,7 @@ function ExpandedRow({ item, result }) {
               </p>
               <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                 {item.prevItems.map((entry, i) => (
-                  <div key={i} style={{
+                  <div key={`prev-${i}-${entry._amount}`} style={{
                     display: 'flex', justifyContent: 'space-between',
                     fontSize: '12px', color: '#94a3b8', padding: '6px 0',
                     borderBottom: '1px solid rgba(51,65,85,0.3)',
@@ -57,7 +65,7 @@ function ExpandedRow({ item, result }) {
               </p>
               <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                 {item.currItems.map((entry, i) => (
-                  <div key={i} style={{
+                  <div key={`curr-${i}-${entry._amount}`} style={{
                     display: 'flex', justifyContent: 'space-between',
                     fontSize: '12px', color: '#94a3b8', padding: '6px 0',
                     borderBottom: '1px solid rgba(51,65,85,0.3)',
@@ -83,28 +91,23 @@ export default function DetailTable({ result }) {
   const [sortBy, setSortBy] = useState('diff');
   const [sortDir, setSortDir] = useState('desc');
 
-  const filters = [
-    { key: 'all', label: '전체' },
-    { key: 'new', label: '신규' },
-    { key: 'removed', label: '제거' },
-    { key: 'increased', label: '증가' },
-    { key: 'decreased', label: '감소' },
-  ];
+  const data = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    const filtered = result.categoryComparison.filter(c => {
+      if (filter !== 'all' && c.status !== filter) return false;
+      if (searchTerm && !c.category.toLowerCase().includes(term)) return false;
+      return true;
+    });
 
-  let data = result.categoryComparison.filter(c => {
-    if (filter !== 'all' && c.status !== filter) return false;
-    if (searchTerm && !c.category.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-    return true;
-  });
-
-  data = [...data].sort((a, b) => {
-    const mult = sortDir === 'desc' ? -1 : 1;
-    if (sortBy === 'category') return mult * a.category.localeCompare(b.category);
-    if (sortBy === 'prev') return mult * (a.prevAmount - b.prevAmount);
-    if (sortBy === 'curr') return mult * (a.currAmount - b.currAmount);
-    if (sortBy === 'diff') return mult * (Math.abs(a.diff) - Math.abs(b.diff));
-    return 0;
-  });
+    return [...filtered].sort((a, b) => {
+      const mult = sortDir === 'desc' ? -1 : 1;
+      if (sortBy === 'category') return mult * a.category.localeCompare(b.category);
+      if (sortBy === 'prev') return mult * (a.prevAmount - b.prevAmount);
+      if (sortBy === 'curr') return mult * (a.currAmount - b.currAmount);
+      if (sortBy === 'diff') return mult * (Math.abs(a.diff) - Math.abs(b.diff));
+      return 0;
+    });
+  }, [result.categoryComparison, filter, searchTerm, sortBy, sortDir]);
 
   const handleSort = (col) => {
     if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
@@ -146,6 +149,7 @@ export default function DetailTable({ result }) {
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') setSearchTerm(searchInput); }}
               placeholder="카테고리 검색 (Enter)"
+              aria-label="카테고리 검색 (엔터로 적용)"
               style={{
                 paddingLeft: '36px', paddingRight: searchTerm ? '36px' : '16px', paddingTop: '10px', paddingBottom: '10px',
                 borderRadius: '8px', background: 'rgba(15,23,42,0.6)',
@@ -156,6 +160,7 @@ export default function DetailTable({ result }) {
             {searchTerm && (
               <button
                 onClick={() => { setSearchInput(''); setSearchTerm(''); }}
+                aria-label="검색어 지우기"
                 style={{
                   position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
                   background: 'rgba(100,116,139,0.3)', border: 'none', borderRadius: '50%',
@@ -171,7 +176,7 @@ export default function DetailTable({ result }) {
 
         {/* Filters */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
-          {filters.map(f => (
+          {FILTERS.map(f => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}

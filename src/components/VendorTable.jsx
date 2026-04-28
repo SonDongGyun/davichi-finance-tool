@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, ChevronDown, ChevronUp, Search, X } from 'lucide-react';
-import { formatMoney, formatMonthLabel } from '../utils/excelParser';
+import { formatMoney, formatMonthLabel } from '../utils/formatters';
 import CategoryTabs from './CategoryTabs';
 
 function smoothScrollTo(ref) {
@@ -32,6 +32,14 @@ const statusLabels = {
   decreased: { label: '감소', color: '#34d399', bg: 'rgba(16,185,129,0.12)' },
 };
 
+const STATUS_FILTERS = [
+  { key: 'all', label: '전체' },
+  { key: 'new', label: '신규' },
+  { key: 'removed', label: '제거' },
+  { key: 'increased', label: '증가' },
+  { key: 'decreased', label: '감소' },
+];
+
 export default function VendorTable({ result }) {
   const [visibleCount, setVisibleCount] = useState(DEFAULT_COUNT);
   const [searchInput, setSearchInput] = useState('');
@@ -49,47 +57,40 @@ export default function VendorTable({ result }) {
     return cats;
   }, [result.vendorComparison]);
 
+  const filtered = useMemo(() => {
+    let arr = result.vendorComparison;
+
+    if (selectedCategory !== 'all') {
+      arr = arr.filter(item => item.category === selectedCategory);
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      arr = arr.filter(item =>
+        item.vendor.toLowerCase().includes(term) ||
+        item.category.toLowerCase().includes(term)
+      );
+    }
+
+    if (filterStatus !== 'all') {
+      arr = arr.filter(item => item.status === filterStatus);
+    }
+
+    return [...arr].sort((a, b) => {
+      const mult = sortDir === 'asc' ? 1 : -1;
+      if (sortBy === 'category') return mult * a.category.localeCompare(b.category);
+      if (sortBy === 'vendor') return mult * a.vendor.localeCompare(b.vendor);
+      if (sortBy === 'prev') return mult * (a.prevAmount - b.prevAmount);
+      if (sortBy === 'curr') return mult * (a.currAmount - b.currAmount);
+      if (sortBy === 'diff') return mult * (Math.abs(a.diff) - Math.abs(b.diff));
+      return 0;
+    });
+  }, [result.vendorComparison, selectedCategory, searchTerm, filterStatus, sortBy, sortDir]);
+
   if (result.vendorComparison.length === 0) return null;
-
-  let filtered = result.vendorComparison;
-
-  if (selectedCategory !== 'all') {
-    filtered = filtered.filter(item => item.category === selectedCategory);
-  }
-
-  if (searchTerm) {
-    const term = searchTerm.toLowerCase();
-    filtered = filtered.filter(item =>
-      item.vendor.toLowerCase().includes(term) ||
-      item.category.toLowerCase().includes(term)
-    );
-  }
-
-  if (filterStatus !== 'all') {
-    filtered = filtered.filter(item => item.status === filterStatus);
-  }
-
-  filtered = [...filtered].sort((a, b) => {
-    const mult = sortDir === 'asc' ? 1 : -1;
-    if (sortBy === 'category') return mult * a.category.localeCompare(b.category);
-    if (sortBy === 'vendor') return mult * a.vendor.localeCompare(b.vendor);
-    if (sortBy === 'prev') return mult * (a.prevAmount - b.prevAmount);
-    if (sortBy === 'curr') return mult * (a.currAmount - b.currAmount);
-    if (sortBy === 'diff') return mult * (Math.abs(a.diff) - Math.abs(b.diff));
-    return 0;
-  });
 
   const data = filtered.slice(0, visibleCount);
   const remaining = filtered.length - visibleCount;
-  const maxDiff = filtered[0]?.diff ? Math.abs(filtered[0].diff) : 1;
-
-  const statusFilters = [
-    { key: 'all', label: '전체' },
-    { key: 'new', label: '신규' },
-    { key: 'removed', label: '제거' },
-    { key: 'increased', label: '증가' },
-    { key: 'decreased', label: '감소' },
-  ];
 
   const handleSort = (col) => {
     if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -149,6 +150,7 @@ export default function VendorTable({ result }) {
                 if (e.key === 'Enter') { setSearchTerm(searchInput); setVisibleCount(DEFAULT_COUNT); }
               }}
               placeholder="거래처 검색 (Enter)"
+              aria-label="거래처 검색 (엔터로 적용)"
               style={{
                 paddingLeft: '36px', paddingRight: searchTerm ? '36px' : '16px', paddingTop: '10px', paddingBottom: '10px',
                 borderRadius: '8px', background: 'rgba(15,23,42,0.6)',
@@ -159,6 +161,7 @@ export default function VendorTable({ result }) {
             {searchTerm && (
               <button
                 onClick={() => { setSearchInput(''); setSearchTerm(''); setVisibleCount(DEFAULT_COUNT); }}
+                aria-label="검색어 지우기"
                 style={{
                   position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
                   background: 'rgba(100,116,139,0.3)', border: 'none', borderRadius: '50%',
@@ -181,7 +184,7 @@ export default function VendorTable({ result }) {
 
         {/* Status Filters */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
-          {statusFilters.map(f => (
+          {STATUS_FILTERS.map(f => (
             <button
               key={f.key}
               onClick={() => { setFilterStatus(f.key); setVisibleCount(DEFAULT_COUNT); }}
@@ -303,7 +306,7 @@ export default function VendorTable({ result }) {
                                 </p>
                                 <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                                   {item.prevItems.map((entry, j) => (
-                                    <div key={j} style={{
+                                    <div key={`prev-${j}-${entry._amount}`} style={{
                                       display: 'flex', justifyContent: 'space-between',
                                       fontSize: '12px', color: '#94a3b8', padding: '6px 0',
                                       borderBottom: '1px solid rgba(51,65,85,0.3)',
@@ -326,7 +329,7 @@ export default function VendorTable({ result }) {
                                 </p>
                                 <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                                   {item.currItems.map((entry, j) => (
-                                    <div key={j} style={{
+                                    <div key={`curr-${j}-${entry._amount}`} style={{
                                       display: 'flex', justifyContent: 'space-between',
                                       fontSize: '12px', color: '#94a3b8', padding: '6px 0',
                                       borderBottom: '1px solid rgba(51,65,85,0.3)',

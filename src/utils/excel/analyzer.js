@@ -1,5 +1,6 @@
 import { parseDate, parseAmount } from './parser';
 import { buildRangeKey } from '../formatters';
+import { UNCATEGORIZED, UNKNOWN_VENDOR } from '../../constants/defaults';
 
 export function extractMonths(rows, dateColumn) {
   const months = new Set();
@@ -89,7 +90,7 @@ export function analyzeMonthlyChanges(rows, config) {
       ? parseAmount(row[amountColumns.debit]) - parseAmount(row[amountColumns.credit] || 0)
       : parseAmount(row[amountColumns.amount]);
 
-    const category = categoryColumn ? String(row[categoryColumn] || '미분류') : '미분류';
+    const category = categoryColumn ? String(row[categoryColumn] || UNCATEGORIZED) : UNCATEGORIZED;
     const description = descriptionColumn ? String(row[descriptionColumn] || '') : '';
     const vendor = vendorColumn ? String(row[vendorColumn] || '') : '';
 
@@ -150,8 +151,8 @@ export function analyzeMonthlyChanges(rows, config) {
   const m2Vendors = {};
 
   m1Data.forEach(e => {
-    const vendor = e._vendor || e._description || '기타';
-    const category = e._category || '미분류';
+    const vendor = e._vendor || e._description || UNKNOWN_VENDOR;
+    const category = e._category || UNCATEGORIZED;
     const key = `${category}|||${vendor}`;
     if (!m1Vendors[key]) m1Vendors[key] = { total: 0, count: 0, category, vendor, items: [] };
     m1Vendors[key].total += e._amount;
@@ -160,8 +161,8 @@ export function analyzeMonthlyChanges(rows, config) {
   });
 
   m2Data.forEach(e => {
-    const vendor = e._vendor || e._description || '기타';
-    const category = e._category || '미분류';
+    const vendor = e._vendor || e._description || UNKNOWN_VENDOR;
+    const category = e._category || UNCATEGORIZED;
     const key = `${category}|||${vendor}`;
     if (!m2Vendors[key]) m2Vendors[key] = { total: 0, count: 0, category, vendor, items: [] };
     m2Vendors[key].total += e._amount;

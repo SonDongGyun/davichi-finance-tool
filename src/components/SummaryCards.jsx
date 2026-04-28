@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Plus, Minus, ArrowUpRight, ArrowDownRight, Equal } from 'lucide-react';
-import { formatMoney, formatMonthLabel } from '../utils/excelParser';
+import { formatMoney, formatMonthLabel } from '../utils/formatters';
 import { useEffect, useState } from 'react';
 
 function AnimatedNumber({ value, prefix = '', suffix = '' }) {

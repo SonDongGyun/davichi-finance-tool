@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Settings2, CheckCircle2 } from 'lucide-react';
 import {
   detectDateColumn, detectAmountColumns,
   detectCategoryColumn, detectDescriptionColumn, detectVendorColumn
-} from '../utils/excelParser';
+} from '../utils/excel/detector';
 
 const selectStyle = {
   width: '100%',
@@ -27,34 +27,32 @@ const labelStyle = {
   fontWeight: 500,
 };
 
+function SelectField({ label, value, onChange, required, headers }) {
+  return (
+    <div>
+      <label style={labelStyle}>
+        {label} {required && <span style={{ color: '#f87171' }}>*</span>}
+      </label>
+      <select value={value} onChange={(e) => onChange(e.target.value)} style={selectStyle}>
+        <option value="">선택 안함</option>
+        {headers.map(h => <option key={h} value={h}>{h}</option>)}
+      </select>
+    </div>
+  );
+}
+
 export default function ColumnMapper({ headers, onConfirm }) {
-  const [dateCol, setDateCol] = useState('');
-  const [debitCol, setDebitCol] = useState('');
-  const [creditCol, setCreditCol] = useState('');
-  const [amountCol, setAmountCol] = useState('');
-  const [categoryCol, setCategoryCol] = useState('');
-  const [descCol, setDescCol] = useState('');
-  const [vendorCol, setVendorCol] = useState('');
-  const [useDebitCredit, setUseDebitCredit] = useState(true);
-
-  useEffect(() => {
-    const detectedDate = detectDateColumn(headers);
-    const detectedAmount = detectAmountColumns(headers);
-    const detectedCategory = detectCategoryColumn(headers);
-    const detectedDesc = detectDescriptionColumn(headers);
-    const detectedVendor = detectVendorColumn(headers);
-
-    if (detectedDate) setDateCol(detectedDate);
-    if (detectedAmount.debit) setDebitCol(detectedAmount.debit);
-    if (detectedAmount.credit) setCreditCol(detectedAmount.credit);
-    if (detectedAmount.amount) {
-      setAmountCol(detectedAmount.amount);
-      if (!detectedAmount.debit) setUseDebitCredit(false);
-    }
-    if (detectedCategory) setCategoryCol(detectedCategory);
-    if (detectedDesc) setDescCol(detectedDesc);
-    if (detectedVendor) setVendorCol(detectedVendor);
-  }, [headers]);
+  const [dateCol, setDateCol] = useState(() => detectDateColumn(headers) || '');
+  const [debitCol, setDebitCol] = useState(() => detectAmountColumns(headers).debit || '');
+  const [creditCol, setCreditCol] = useState(() => detectAmountColumns(headers).credit || '');
+  const [amountCol, setAmountCol] = useState(() => detectAmountColumns(headers).amount || '');
+  const [categoryCol, setCategoryCol] = useState(() => detectCategoryColumn(headers) || '');
+  const [descCol, setDescCol] = useState(() => detectDescriptionColumn(headers) || '');
+  const [vendorCol, setVendorCol] = useState(() => detectVendorColumn(headers) || '');
+  const [useDebitCredit, setUseDebitCredit] = useState(() => {
+    const detected = detectAmountColumns(headers);
+    return Boolean(detected.debit) || !detected.amount;
+  });
 
   const canConfirm = dateCol && (useDebitCredit ? debitCol : amountCol);
 
@@ -69,18 +67,6 @@ export default function ColumnMapper({ headers, onConfirm }) {
       vendorColumn: vendorCol || null,
     });
   };
-
-  const SelectField = ({ label, value, onChange, required }) => (
-    <div>
-      <label style={labelStyle}>
-        {label} {required && <span style={{ color: '#f87171' }}>*</span>}
-      </label>
-      <select value={value} onChange={(e) => onChange(e.target.value)} style={selectStyle}>
-        <option value="">선택 안함</option>
-        {headers.map(h => <option key={h} value={h}>{h}</option>)}
-      </select>
-    </div>
-  );
 
   const tabBtn = (active, label, onClick) => (
     <button
@@ -117,8 +103,8 @@ export default function ColumnMapper({ headers, onConfirm }) {
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-          <SelectField label="날짜 컬럼" value={dateCol} onChange={setDateCol} required />
-          <SelectField label="카테고리/계정과목 컬럼" value={categoryCol} onChange={setCategoryCol} />
+          <SelectField label="날짜 컬럼" value={dateCol} onChange={setDateCol} required headers={headers} />
+          <SelectField label="카테고리/계정과목 컬럼" value={categoryCol} onChange={setCategoryCol} headers={headers} />
 
           <div style={{ gridColumn: 'span 2', display: 'flex', gap: '10px', marginBottom: '4px' }}>
             {tabBtn(useDebitCredit, '차변/대변', () => setUseDebitCredit(true))}
@@ -127,15 +113,15 @@ export default function ColumnMapper({ headers, onConfirm }) {
 
           {useDebitCredit ? (
             <>
-              <SelectField label="차변(지출) 컬럼" value={debitCol} onChange={setDebitCol} required />
-              <SelectField label="대변(수입) 컬럼" value={creditCol} onChange={setCreditCol} />
+              <SelectField label="차변(지출) 컬럼" value={debitCol} onChange={setDebitCol} required headers={headers} />
+              <SelectField label="대변(수입) 컬럼" value={creditCol} onChange={setCreditCol} headers={headers} />
             </>
           ) : (
-            <SelectField label="금액 컬럼" value={amountCol} onChange={setAmountCol} required />
+            <SelectField label="금액 컬럼" value={amountCol} onChange={setAmountCol} required headers={headers} />
           )}
 
-          <SelectField label="적요/설명 컬럼" value={descCol} onChange={setDescCol} />
-          <SelectField label="거래처 컬럼" value={vendorCol} onChange={setVendorCol} />
+          <SelectField label="적요/설명 컬럼" value={descCol} onChange={setDescCol} headers={headers} />
+          <SelectField label="거래처 컬럼" value={vendorCol} onChange={setVendorCol} headers={headers} />
         </div>
 
         <button

@@ -5,7 +5,7 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts';
 import { BarChart3, PieChart as PieChartIcon } from 'lucide-react';
-import { formatMoney, formatMonthLabel } from '../utils/excelParser';
+import { formatMoney, formatMonthLabel } from '../utils/formatters';
 
 const COLORS = [
   '#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b',
@@ -23,7 +23,7 @@ function CustomTooltip({ active, payload, label }) {
     }}>
       <p style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: '6px', fontSize: '13px' }}>{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color, fontSize: '12px', margin: '2px 0' }}>
+        <p key={p.name || p.dataKey || i} style={{ color: p.color, fontSize: '12px', margin: '2px 0' }}>
           {p.name}: {formatMoney(p.value)}원
         </p>
       ))}
@@ -131,7 +131,7 @@ export default function AnalysisCharts({ result }) {
                   <PieChart>
                     <Pie data={pieData1} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} innerRadius={60} animationDuration={1000}
                       label={({ name, percent }) => (percent || 0) > 0.05 ? `${name.substring(0, 6)} ${((percent || 0) * 100).toFixed(0)}%` : ''} labelLine={false}>
-                      {pieData1.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                      {pieData1.map((d, i) => <Cell key={d.name} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip content={<CustomPieTooltip total={pieTotal1} />} />
                   </PieChart>
@@ -143,7 +143,7 @@ export default function AnalysisCharts({ result }) {
                   <PieChart>
                     <Pie data={pieData2} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} innerRadius={60} animationDuration={1000} animationBegin={500}
                       label={({ name, percent }) => (percent || 0) > 0.05 ? `${name.substring(0, 6)} ${((percent || 0) * 100).toFixed(0)}%` : ''} labelLine={false}>
-                      {pieData2.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                      {pieData2.map((d, i) => <Cell key={d.name} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip content={<CustomPieTooltip total={pieTotal2} />} />
                   </PieChart>
