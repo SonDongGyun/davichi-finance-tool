@@ -14,7 +14,7 @@ import DetailTable from './components/DetailTable';
 import VendorTable from './components/VendorTable';
 import ExportButtons from './components/ExportButtons';
 import PasswordModal from './components/PasswordModal';
-import { parseExcelFile } from './utils/excel/parser';
+import { parseExcelFile, EncryptedFileError } from './utils/excel/parser';
 import { extractMonths, analyzeSheets, analyzeMonthlyChanges, analyzeSheetComparison } from './utils/excel/analyzer';
 import { expandMonthRange, monthRangesOverlap } from './utils/formatters';
 import { decryptAndParse } from './services/decryptService';
@@ -26,8 +26,10 @@ import {
   STEP_RESULT,
   MODE_MONTHLY,
   MODE_SHEET,
+  type AppMode,
 } from './constants/steps';
-import { appReducer, initialState } from './state/appReducer';
+import { appReducer, initialState, type AppAction, type MonthlyMode } from './state/appReducer';
+import type { ColumnConfig, DateRange, SideSelection } from './types';
 import './App.css';
 
 function App() {
@@ -39,7 +41,7 @@ function App() {
     range1, range2, sheetInfos, side1, side2, analysisResult, password,
   } = state;
 
-  const handleSelectMode = useCallback((m) => {
+  const handleSelectMode = useCallback((m: AppMode) => {
     dispatch({ type: 'SELECT_MODE', mode: m });
   }, []);
 
@@ -47,12 +49,12 @@ function App() {
     dispatch({ type: 'BACK_TO_LANDING' });
   }, []);
 
-  const handleFileLoaded = useCallback(async (file) => {
+  const handleFileLoaded = useCallback(async (file: File) => {
     try {
       const parsed = await parseExcelFile(file);
       dispatch({ type: 'FILE_PARSED', parsed });
     } catch (err) {
-      if (err && err.encrypted) {
+      if (err instanceof EncryptedFileError) {
         dispatch({ type: 'PASSWORD_REQUIRED', file });
       } else {
         throw err;
@@ -60,14 +62,15 @@ function App() {
     }
   }, []);
 
-  const handlePasswordSubmit = useCallback(async (pwd) => {
+  const handlePasswordSubmit = useCallback(async (pwd: string) => {
     if (!password.file) return;
     dispatch({ type: 'PASSWORD_SUBMITTING' });
     try {
       const parsed = await decryptAndParse(password.file, pwd);
       dispatch({ type: 'FILE_PARSED', parsed });
     } catch (err) {
-      dispatch({ type: 'PASSWORD_FAILED', error: err.message || '복호화에 실패했습니다.' });
+      const message = err instanceof Error ? err.message : '복호화에 실패했습니다.';
+      dispatch({ type: 'PASSWORD_FAILED', error: message });
     }
   }, [password.file]);
 
@@ -75,10 +78,12 @@ function App() {
     dispatch({ type: 'PASSWORD_CLOSED' });
   }, []);
 
-  const handleColumnConfirm = useCallback((config) => {
+  const handleColumnConfirm = useCallback((config: ColumnConfig) => {
+    if (!fileData) return;
+
     if (mode === MODE_MONTHLY) {
       const monthList = extractMonths(fileData.rows, config.dateColumn);
-      const action = {
+      const action: AppAction = {
         type: 'COLUMN_CONFIRMED',
         config,
         months: monthList,
@@ -93,7 +98,7 @@ function App() {
       dispatch(action);
     } else if (mode === MODE_SHEET) {
       const infos = analyzeSheets(fileData.rowsBySheet || {}, config.dateColumn);
-      const action = {
+      const action: AppAction = {
         type: 'COLUMN_CONFIRMED',
         config,
         months: [],
@@ -111,6 +116,8 @@ function App() {
   }, [fileData, mode]);
 
   const handleAnalyze = useCallback(() => {
+    if (!fileData || !columnConfig) return;
+
     if (mode === MODE_MONTHLY) {
       const months1 = expandMonthRange(range1.start, range1.end);
       const months2 = expandMonthRange(range2.start, range2.end);
@@ -148,19 +155,19 @@ function App() {
     dispatch({ type: 'BACK_TO_SELECT' });
   }, []);
 
-  const handleSetMonthlyMode = useCallback((value) => {
+  const handleSetMonthlyMode = useCallback((value: MonthlyMode) => {
     dispatch({ type: 'SET_MONTHLY_MODE', value });
   }, []);
-  const handleSetRange1 = useCallback((value) => {
+  const handleSetRange1 = useCallback((value: DateRange) => {
     dispatch({ type: 'SET_RANGE1', value });
   }, []);
-  const handleSetRange2 = useCallback((value) => {
+  const handleSetRange2 = useCallback((value: DateRange) => {
     dispatch({ type: 'SET_RANGE2', value });
   }, []);
-  const handleSetSide1 = useCallback((value) => {
+  const handleSetSide1 = useCallback((value: SideSelection) => {
     dispatch({ type: 'SET_SIDE1', value });
   }, []);
-  const handleSetSide2 = useCallback((value) => {
+  const handleSetSide2 = useCallback((value: SideSelection) => {
     dispatch({ type: 'SET_SIDE2', value });
   }, []);
 

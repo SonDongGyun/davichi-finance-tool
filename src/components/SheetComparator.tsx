@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion';
 import { Layers, ArrowRight, AlertTriangle } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { GRADIENTS } from '../constants/colors';
 import { cardStyle } from '../styles/common';
+import type { SheetInfo, SideSelection } from '../types';
 
-const selectStyle = {
+const selectStyle: CSSProperties = {
   padding: '10px 14px',
   borderRadius: '10px',
   background: 'rgba(30,41,59,0.8)',
@@ -15,11 +17,17 @@ const selectStyle = {
   appearance: 'none',
 };
 
-function monthNum(monthKey) {
+function monthNum(monthKey: string): number {
   return Number(monthKey.split('-')[1]);
 }
 
-function MonthChips({ months, checked, onToggle }) {
+interface MonthChipsProps {
+  months: string[];
+  checked: Set<string>;
+  onToggle: (monthKey: string) => void;
+}
+
+function MonthChips({ months, checked, onToggle }: MonthChipsProps) {
   if (months.length === 0) {
     return (
       <p style={{ fontSize: '13px', color: '#64748b', padding: '12px 0' }}>
@@ -59,7 +67,22 @@ function MonthChips({ months, checked, onToggle }) {
   );
 }
 
-function SideCard({ title, sheets, selectedName, checkedMonths, onSheetChange, onToggleMonth, onSelectAll, onClearAll, disabledSheetName }) {
+interface SideCardProps {
+  title: string;
+  sheets: SheetInfo[];
+  selectedName: string;
+  checkedMonths: Set<string>;
+  onSheetChange: (name: string) => void;
+  onToggleMonth: (monthKey: string) => void;
+  onSelectAll: () => void;
+  onClearAll: () => void;
+  disabledSheetName: string;
+}
+
+function SideCard({
+  title, sheets, selectedName, checkedMonths,
+  onSheetChange, onToggleMonth, onSelectAll, onClearAll, disabledSheetName,
+}: SideCardProps) {
   const sheet = sheets.find(s => s.name === selectedName);
   const months = sheet?.months || [];
   const checkedCount = checkedMonths.size;
@@ -139,7 +162,18 @@ function SideCard({ title, sheets, selectedName, checkedMonths, onSheetChange, o
   );
 }
 
-export default function SheetComparator({ sheets, side1, side2, onSide1Change, onSide2Change, onAnalyze }) {
+interface SheetComparatorProps {
+  sheets: SheetInfo[];
+  side1: SideSelection;
+  side2: SideSelection;
+  onSide1Change: (selection: SideSelection) => void;
+  onSide2Change: (selection: SideSelection) => void;
+  onAnalyze: () => void;
+}
+
+export default function SheetComparator({
+  sheets, side1, side2, onSide1Change, onSide2Change, onAnalyze,
+}: SheetComparatorProps) {
   if (sheets.length < 2) {
     return (
       <motion.div
@@ -160,22 +194,22 @@ export default function SheetComparator({ sheets, side1, side2, onSide1Change, o
     );
   }
 
-  const toggleMonth = (side, onChange) => (monthKey) => {
+  const toggleMonth = (side: SideSelection, onChange: (s: SideSelection) => void) => (monthKey: string) => {
     const next = new Set(side.checkedMonths);
     if (next.has(monthKey)) next.delete(monthKey);
     else next.add(monthKey);
     onChange({ ...side, checkedMonths: next });
   };
 
-  const selectAll = (side, sheet, onChange) => () => {
-    onChange({ ...side, checkedMonths: new Set(sheet.months) });
+  const selectAll = (side: SideSelection, sheet: SheetInfo | undefined, onChange: (s: SideSelection) => void) => () => {
+    onChange({ ...side, checkedMonths: new Set(sheet?.months ?? []) });
   };
 
-  const clearAll = (side, onChange) => () => {
+  const clearAll = (side: SideSelection, onChange: (s: SideSelection) => void) => () => {
     onChange({ ...side, checkedMonths: new Set() });
   };
 
-  const changeSheet = (side, onChange) => (name) => {
+  const changeSheet = (_side: SideSelection, onChange: (s: SideSelection) => void) => (name: string) => {
     const target = sheets.find(s => s.name === name);
     onChange({ sheetName: name, checkedMonths: new Set(target?.months || []) });
   };

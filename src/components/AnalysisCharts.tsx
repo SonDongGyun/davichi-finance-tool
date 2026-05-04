@@ -7,6 +7,7 @@ import {
 import { BarChart3, PieChart as PieChartIcon } from 'lucide-react';
 import { formatMoney, formatMonthLabel } from '../utils/formatters';
 import { cardStyle } from '../styles/common';
+import type { AnalysisResult } from '../types';
 
 const COLORS = [
   '#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b',
@@ -14,7 +15,21 @@ const COLORS = [
   '#84cc16', '#a855f7', '#0ea5e9', '#22c55e', '#eab308',
 ];
 
-function CustomTooltip({ active, payload, label }) {
+// recharts passes a richer payload — we only consume name/dataKey/color/value.
+interface TooltipPayloadItem {
+  name?: string;
+  dataKey?: string;
+  color?: string;
+  value: number;
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string;
+}
+
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
@@ -32,7 +47,13 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
-function CustomPieTooltip({ active, payload, total }) {
+interface CustomPieTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  total: number;
+}
+
+function CustomPieTooltip({ active, payload, total }: CustomPieTooltipProps) {
   if (!active || !payload?.length) return null;
   const entry = payload[0];
   const pct = total > 0 ? ((entry.value / total) * 100).toFixed(1) : '0.0';
@@ -49,25 +70,40 @@ function CustomPieTooltip({ active, payload, total }) {
   );
 }
 
-export default function AnalysisCharts({ result }) {
-  const [chartView, setChartView] = useState('bar');
+type ChartView = 'bar' | 'pie';
 
-  const barData = result.categoryComparison.slice(0, 12).map(c => ({
-    name: c.category.length > 8 ? c.category.substring(0, 8) + '...' : c.category,
-    fullName: c.category,
-    [formatMonthLabel(result.month1.label)]: c.prevAmount,
-    [formatMonthLabel(result.month2.label)]: c.currAmount,
-  }));
+interface AnalysisChartsProps {
+  result: AnalysisResult;
+}
 
-  const pieData1 = result.categoryComparison.filter(c => c.prevAmount > 0).slice(0, 8).map(c => ({ name: c.category, value: c.prevAmount }));
-  const pieData2 = result.categoryComparison.filter(c => c.currAmount > 0).slice(0, 8).map(c => ({ name: c.category, value: c.currAmount }));
-  const pieTotal1 = pieData1.reduce((s, d) => s + d.value, 0);
-  const pieTotal2 = pieData2.reduce((s, d) => s + d.value, 0);
+interface PieDatum {
+  name: string;
+  value: number;
+}
+
+export default function AnalysisCharts({ result }: AnalysisChartsProps) {
+  const [chartView, setChartView] = useState<ChartView>('bar');
 
   const m1Label = formatMonthLabel(result.month1.label);
   const m2Label = formatMonthLabel(result.month2.label);
 
-  const chartBtnStyle = (active) => ({
+  const barData = result.categoryComparison.slice(0, 12).map(c => ({
+    name: c.category.length > 8 ? c.category.substring(0, 8) + '...' : c.category,
+    fullName: c.category,
+    [m1Label]: c.prevAmount,
+    [m2Label]: c.currAmount,
+  }));
+
+  const pieData1: PieDatum[] = result.categoryComparison
+    .filter(c => c.prevAmount > 0).slice(0, 8)
+    .map(c => ({ name: c.category, value: c.prevAmount }));
+  const pieData2: PieDatum[] = result.categoryComparison
+    .filter(c => c.currAmount > 0).slice(0, 8)
+    .map(c => ({ name: c.category, value: c.currAmount }));
+  const pieTotal1 = pieData1.reduce((s, d) => s + d.value, 0);
+  const pieTotal2 = pieData2.reduce((s, d) => s + d.value, 0);
+
+  const chartBtnStyle = (active: boolean) => ({
     padding: '8px 14px', borderRadius: '8px', border: 'none',
     fontSize: '13px', cursor: 'pointer',
     background: active ? 'rgba(59,130,246,0.2)' : 'transparent',
@@ -111,7 +147,7 @@ export default function AnalysisCharts({ result }) {
                 <BarChart data={barData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.1)" />
                   <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12 }} angle={-30} textAnchor="end" height={60} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(v) => v >= 1000000 ? `${(v / 1000000).toFixed(0)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(v: number) => v >= 1000000 ? `${(v / 1000000).toFixed(0)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : String(v)} />
                   <Tooltip content={<CustomTooltip />} cursor={false} />
                   <Bar dataKey={m1Label} fill="#6366f1" radius={[4, 4, 0, 0]} animationDuration={1000} />
                   <Bar dataKey={m2Label} fill="#06b6d4" radius={[4, 4, 0, 0]} animationDuration={1000} animationBegin={300} />
@@ -131,7 +167,7 @@ export default function AnalysisCharts({ result }) {
                 <ResponsiveContainer width="100%" height="90%">
                   <PieChart>
                     <Pie data={pieData1} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} innerRadius={60} animationDuration={1000}
-                      label={({ name, percent }) => (percent || 0) > 0.05 ? `${name.substring(0, 6)} ${((percent || 0) * 100).toFixed(0)}%` : ''} labelLine={false}>
+                      label={({ name, percent }: { name?: string; percent?: number }) => (percent || 0) > 0.05 ? `${(name ?? '').substring(0, 6)} ${((percent || 0) * 100).toFixed(0)}%` : ''} labelLine={false}>
                       {pieData1.map((d, i) => <Cell key={d.name} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip content={<CustomPieTooltip total={pieTotal1} />} />
@@ -143,7 +179,7 @@ export default function AnalysisCharts({ result }) {
                 <ResponsiveContainer width="100%" height="90%">
                   <PieChart>
                     <Pie data={pieData2} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} innerRadius={60} animationDuration={1000} animationBegin={500}
-                      label={({ name, percent }) => (percent || 0) > 0.05 ? `${name.substring(0, 6)} ${((percent || 0) * 100).toFixed(0)}%` : ''} labelLine={false}>
+                      label={({ name, percent }: { name?: string; percent?: number }) => (percent || 0) > 0.05 ? `${(name ?? '').substring(0, 6)} ${((percent || 0) * 100).toFixed(0)}%` : ''} labelLine={false}>
                       {pieData2.map((d, i) => <Cell key={d.name} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip content={<CustomPieTooltip total={pieTotal2} />} />

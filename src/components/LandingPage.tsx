@@ -1,10 +1,14 @@
 import { motion } from 'framer-motion';
 import { Calendar, Layers, ArrowRight } from 'lucide-react';
-import { MODE_MONTHLY, MODE_SHEET } from '../constants/steps';
+import { MODE_MONTHLY, MODE_SHEET, type AppMode } from '../constants/steps';
 import { useWindowSize } from '../hooks/useWindowSize';
 import { GRADIENTS } from '../constants/colors';
 
-export default function LandingPage({ onSelectMode }) {
+interface LandingPageProps {
+  onSelectMode: (mode: AppMode) => void;
+}
+
+export default function LandingPage({ onSelectMode }: LandingPageProps) {
   const { isMobile } = useWindowSize();
 
   const modes = [
@@ -26,7 +30,7 @@ export default function LandingPage({ onSelectMode }) {
       gradient: GRADIENTS.warm,
       shadow: '0 8px 24px rgba(245,158,11,0.25)',
     },
-  ];
+  ] as const;
 
   return (
     <motion.div
