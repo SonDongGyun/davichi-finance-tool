@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useReducer } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import Header from './components/Header';
@@ -30,121 +30,184 @@ import {
 } from './constants/steps';
 import './App.css';
 
+const EMPTY_RANGE = { start: '', end: '' };
+const EMPTY_SIDE = { sheetName: '', checkedMonths: new Set() };
+const PASSWORD_INITIAL = { open: false, file: null, error: '', loading: false };
+
+const initialState = {
+  step: STEP_LANDING,
+  mode: MODE_MONTHLY,
+  fileData: null,
+  columnConfig: null,
+  months: [],
+  monthlyMode: 'single',
+  range1: EMPTY_RANGE,
+  range2: EMPTY_RANGE,
+  sheetInfos: [],
+  side1: EMPTY_SIDE,
+  side2: EMPTY_SIDE,
+  analysisResult: null,
+  password: PASSWORD_INITIAL,
+};
+
+// Single source of truth for all step/mode/file/comparison transitions.
+// Previously these were 13 separate useStates whose resets had to be kept in
+// sync manually — easy to forget a field on a new transition.
+function appReducer(state, action) {
+  switch (action.type) {
+    case 'SELECT_MODE':
+      return { ...initialState, mode: action.mode, step: STEP_UPLOAD };
+
+    case 'BACK_TO_LANDING':
+      return { ...initialState };
+
+    case 'FILE_PARSED':
+      return {
+        ...state,
+        fileData: action.parsed,
+        step: STEP_MAPPING,
+        analysisResult: null,
+        password: PASSWORD_INITIAL,
+      };
+
+    case 'PASSWORD_REQUIRED':
+      return {
+        ...state,
+        password: { open: true, file: action.file, error: '', loading: false },
+      };
+
+    case 'PASSWORD_SUBMITTING':
+      return {
+        ...state,
+        password: { ...state.password, loading: true, error: '' },
+      };
+
+    case 'PASSWORD_FAILED':
+      return {
+        ...state,
+        password: { ...state.password, loading: false, error: action.error },
+      };
+
+    case 'PASSWORD_CLOSED':
+      return { ...state, password: PASSWORD_INITIAL };
+
+    case 'COLUMN_CONFIRMED':
+      return {
+        ...state,
+        columnConfig: action.config,
+        months: action.months ?? state.months,
+        sheetInfos: action.sheetInfos ?? state.sheetInfos,
+        range1: action.range1 ?? state.range1,
+        range2: action.range2 ?? state.range2,
+        side1: action.side1 ?? state.side1,
+        side2: action.side2 ?? state.side2,
+        step: STEP_SELECT,
+      };
+
+    case 'ANALYSIS_DONE':
+      return { ...state, analysisResult: action.result, step: STEP_RESULT };
+
+    case 'BACK_TO_SELECT':
+      return { ...state, step: STEP_SELECT, analysisResult: null };
+
+    case 'SET_MONTHLY_MODE':
+      return { ...state, monthlyMode: action.value };
+
+    case 'SET_RANGE1':
+      return { ...state, range1: action.value };
+
+    case 'SET_RANGE2':
+      return { ...state, range2: action.value };
+
+    case 'SET_SIDE1':
+      return { ...state, side1: action.value };
+
+    case 'SET_SIDE2':
+      return { ...state, side2: action.value };
+
+    default:
+      return state;
+  }
+}
+
 function App() {
   const { isMobile } = useWindowSize();
-  const [step, setStep] = useState(STEP_LANDING);
-  const [mode, setMode] = useState(MODE_MONTHLY);
-  const [fileData, setFileData] = useState(null);
-  const [columnConfig, setColumnConfig] = useState(null);
+  const [state, dispatch] = useReducer(appReducer, initialState);
 
-  // 월별 비교 상태
-  const [months, setMonths] = useState([]);
-  const [monthlyMode, setMonthlyMode] = useState('single');
-  const [range1, setRange1] = useState({ start: '', end: '' });
-  const [range2, setRange2] = useState({ start: '', end: '' });
-
-  // 시트별 비교 상태
-  const [sheetInfos, setSheetInfos] = useState([]);
-  const [side1, setSide1] = useState({ sheetName: '', checkedMonths: new Set() });
-  const [side2, setSide2] = useState({ sheetName: '', checkedMonths: new Set() });
-
-  const [analysisResult, setAnalysisResult] = useState(null);
-
-  // 암호 모달 상태
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [pendingFile, setPendingFile] = useState(null);
-  const [passwordError, setPasswordError] = useState('');
-  const [isDecrypting, setIsDecrypting] = useState(false);
+  const {
+    step, mode, fileData, columnConfig, months, monthlyMode,
+    range1, range2, sheetInfos, side1, side2, analysisResult, password,
+  } = state;
 
   const handleSelectMode = useCallback((m) => {
-    setMode(m);
-    setStep(STEP_UPLOAD);
-    setFileData(null);
-    setColumnConfig(null);
-    setAnalysisResult(null);
+    dispatch({ type: 'SELECT_MODE', mode: m });
   }, []);
 
   const handleBackToLanding = useCallback(() => {
-    setStep(STEP_LANDING);
-    setFileData(null);
-    setColumnConfig(null);
-    setAnalysisResult(null);
-    setMonths([]);
-    setSheetInfos([]);
-    setRange1({ start: '', end: '' });
-    setRange2({ start: '', end: '' });
-    setSide1({ sheetName: '', checkedMonths: new Set() });
-    setSide2({ sheetName: '', checkedMonths: new Set() });
-  }, []);
-
-  const handleFileSuccess = useCallback((parsed) => {
-    setFileData(parsed);
-    setStep(STEP_MAPPING);
-    setAnalysisResult(null);
-    setShowPasswordModal(false);
-    setPendingFile(null);
-    setPasswordError('');
+    dispatch({ type: 'BACK_TO_LANDING' });
   }, []);
 
   const handleFileLoaded = useCallback(async (file) => {
     try {
       const parsed = await parseExcelFile(file);
-      handleFileSuccess(parsed);
+      dispatch({ type: 'FILE_PARSED', parsed });
     } catch (err) {
       if (err && err.encrypted) {
-        setPendingFile(file);
-        setPasswordError('');
-        setShowPasswordModal(true);
+        dispatch({ type: 'PASSWORD_REQUIRED', file });
       } else {
         throw err;
       }
     }
-  }, [handleFileSuccess]);
+  }, []);
 
-  const handlePasswordSubmit = useCallback(async (password) => {
-    if (!pendingFile) return;
-    setIsDecrypting(true);
-    setPasswordError('');
+  const handlePasswordSubmit = useCallback(async (pwd) => {
+    if (!password.file) return;
+    dispatch({ type: 'PASSWORD_SUBMITTING' });
     try {
-      const parsed = await decryptAndParse(pendingFile, password);
-      handleFileSuccess(parsed);
+      const parsed = await decryptAndParse(password.file, pwd);
+      dispatch({ type: 'FILE_PARSED', parsed });
     } catch (err) {
-      setPasswordError(err.message || '복호화에 실패했습니다.');
+      dispatch({ type: 'PASSWORD_FAILED', error: err.message || '복호화에 실패했습니다.' });
     }
-    setIsDecrypting(false);
-  }, [pendingFile, handleFileSuccess]);
+  }, [password.file]);
 
   const handlePasswordClose = useCallback(() => {
-    setShowPasswordModal(false);
-    setPendingFile(null);
-    setPasswordError('');
+    dispatch({ type: 'PASSWORD_CLOSED' });
   }, []);
 
   const handleColumnConfirm = useCallback((config) => {
-    setColumnConfig(config);
-
     if (mode === MODE_MONTHLY) {
       const monthList = extractMonths(fileData.rows, config.dateColumn);
-      setMonths(monthList);
+      const action = {
+        type: 'COLUMN_CONFIRMED',
+        config,
+        months: monthList,
+        sheetInfos: [],
+      };
       if (monthList.length >= 2) {
         const prev = monthList[monthList.length - 2];
         const curr = monthList[monthList.length - 1];
-        setRange1({ start: prev, end: prev });
-        setRange2({ start: curr, end: curr });
+        action.range1 = { start: prev, end: prev };
+        action.range2 = { start: curr, end: curr };
       }
+      dispatch(action);
     } else if (mode === MODE_SHEET) {
       const infos = analyzeSheets(fileData.rowsBySheet || {}, config.dateColumn);
-      setSheetInfos(infos);
+      const action = {
+        type: 'COLUMN_CONFIRMED',
+        config,
+        months: [],
+        sheetInfos: infos,
+      };
       if (infos.length >= 2) {
-        setSide1({ sheetName: infos[0].name, checkedMonths: new Set(infos[0].months) });
-        setSide2({ sheetName: infos[1].name, checkedMonths: new Set(infos[1].months) });
+        action.side1 = { sheetName: infos[0].name, checkedMonths: new Set(infos[0].months) };
+        action.side2 = { sheetName: infos[1].name, checkedMonths: new Set(infos[1].months) };
       } else if (infos.length === 1) {
-        setSide1({ sheetName: infos[0].name, checkedMonths: new Set() });
-        setSide2({ sheetName: '', checkedMonths: new Set() });
+        action.side1 = { sheetName: infos[0].name, checkedMonths: new Set() };
+        action.side2 = { sheetName: '', checkedMonths: new Set() };
       }
+      dispatch(action);
     }
-
-    setStep(STEP_SELECT);
   }, [fileData, mode]);
 
   const handleAnalyze = useCallback(() => {
@@ -157,23 +220,19 @@ function App() {
         alert('두 비교 범위가 겹칩니다. 같은 월은 한쪽 기간에만 포함되도록 범위를 조정해주세요.');
         return;
       }
-
       const result = analyzeMonthlyChanges(fileData.rows, {
         ...columnConfig,
         months1,
         months2,
       });
-      setAnalysisResult(result);
-      setStep(STEP_RESULT);
+      dispatch({ type: 'ANALYSIS_DONE', result });
     } else if (mode === MODE_SHEET) {
       const months1 = Array.from(side1.checkedMonths);
       const months2 = Array.from(side2.checkedMonths);
       if (months1.length === 0 || months2.length === 0) return;
       if (side1.sheetName === side2.sheetName) return;
-
       const sheet1Rows = fileData.rowsBySheet?.[side1.sheetName] || [];
       const sheet2Rows = fileData.rowsBySheet?.[side2.sheetName] || [];
-
       const result = analyzeSheetComparison(
         sheet1Rows,
         sheet2Rows,
@@ -181,14 +240,28 @@ function App() {
         months1,
         months2,
       );
-      setAnalysisResult(result);
-      setStep(STEP_RESULT);
+      dispatch({ type: 'ANALYSIS_DONE', result });
     }
   }, [mode, fileData, columnConfig, range1, range2, side1, side2]);
 
   const handleBackToSelect = useCallback(() => {
-    setStep(STEP_SELECT);
-    setAnalysisResult(null);
+    dispatch({ type: 'BACK_TO_SELECT' });
+  }, []);
+
+  const handleSetMonthlyMode = useCallback((value) => {
+    dispatch({ type: 'SET_MONTHLY_MODE', value });
+  }, []);
+  const handleSetRange1 = useCallback((value) => {
+    dispatch({ type: 'SET_RANGE1', value });
+  }, []);
+  const handleSetRange2 = useCallback((value) => {
+    dispatch({ type: 'SET_RANGE2', value });
+  }, []);
+  const handleSetSide1 = useCallback((value) => {
+    dispatch({ type: 'SET_SIDE1', value });
+  }, []);
+  const handleSetSide2 = useCallback((value) => {
+    dispatch({ type: 'SET_SIDE2', value });
   }, []);
 
   return (
@@ -306,11 +379,11 @@ function App() {
                 <MonthSelector
                   months={months}
                   mode={monthlyMode}
-                  onModeChange={setMonthlyMode}
+                  onModeChange={handleSetMonthlyMode}
                   range1={range1}
                   range2={range2}
-                  onRange1Change={setRange1}
-                  onRange2Change={setRange2}
+                  onRange1Change={handleSetRange1}
+                  onRange2Change={handleSetRange2}
                   onAnalyze={handleAnalyze}
                 />
               </motion.div>
@@ -327,8 +400,8 @@ function App() {
                   sheets={sheetInfos}
                   side1={side1}
                   side2={side2}
-                  onSide1Change={setSide1}
-                  onSide2Change={setSide2}
+                  onSide1Change={handleSetSide1}
+                  onSide2Change={handleSetSide2}
                   onAnalyze={handleAnalyze}
                 />
               </motion.div>
@@ -377,11 +450,11 @@ function App() {
       </div>
 
       <PasswordModal
-        isOpen={showPasswordModal}
+        isOpen={password.open}
         onSubmit={handlePasswordSubmit}
         onClose={handlePasswordClose}
-        error={passwordError}
-        isLoading={isDecrypting}
+        error={password.error}
+        isLoading={password.loading}
       />
     </div>
   );
