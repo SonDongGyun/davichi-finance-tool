@@ -124,5 +124,8 @@ export function parseAmount(val) {
 
   const cleaned = str.replace(/[,\s원₩]/g, '');
   const num = Number(cleaned);
-  return Number.isFinite(num) ? sign * num : 0;
+  if (!Number.isFinite(num)) return 0;
+  // `sign * 0` produces -0 when sign is -1 — normalize to +0 so consumers
+  // (display, Object.is, JSON) see a single canonical zero.
+  return (sign * num) || 0;
 }
