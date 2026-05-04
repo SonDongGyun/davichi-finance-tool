@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Settings2, CheckCircle2 } from 'lucide-react';
 import {
@@ -42,17 +42,26 @@ function SelectField({ label, value, onChange, required, headers }) {
 }
 
 export default function ColumnMapper({ headers, onConfirm }) {
-  const [dateCol, setDateCol] = useState(() => detectDateColumn(headers) || '');
-  const [debitCol, setDebitCol] = useState(() => detectAmountColumns(headers).debit || '');
-  const [creditCol, setCreditCol] = useState(() => detectAmountColumns(headers).credit || '');
-  const [amountCol, setAmountCol] = useState(() => detectAmountColumns(headers).amount || '');
-  const [categoryCol, setCategoryCol] = useState(() => detectCategoryColumn(headers) || '');
-  const [descCol, setDescCol] = useState(() => detectDescriptionColumn(headers) || '');
-  const [vendorCol, setVendorCol] = useState(() => detectVendorColumn(headers) || '');
-  const [useDebitCredit, setUseDebitCredit] = useState(() => {
-    const detected = detectAmountColumns(headers);
-    return Boolean(detected.debit) || !detected.amount;
-  });
+  // Single detection pass; previously detectAmountColumns ran four times during
+  // initial state setup.
+  const detected = useMemo(() => ({
+    date: detectDateColumn(headers),
+    amount: detectAmountColumns(headers),
+    category: detectCategoryColumn(headers),
+    description: detectDescriptionColumn(headers),
+    vendor: detectVendorColumn(headers),
+  }), [headers]);
+
+  const [dateCol, setDateCol] = useState(() => detected.date || '');
+  const [debitCol, setDebitCol] = useState(() => detected.amount.debit || '');
+  const [creditCol, setCreditCol] = useState(() => detected.amount.credit || '');
+  const [amountCol, setAmountCol] = useState(() => detected.amount.amount || '');
+  const [categoryCol, setCategoryCol] = useState(() => detected.category || '');
+  const [descCol, setDescCol] = useState(() => detected.description || '');
+  const [vendorCol, setVendorCol] = useState(() => detected.vendor || '');
+  const [useDebitCredit, setUseDebitCredit] = useState(
+    () => Boolean(detected.amount.debit) || !detected.amount.amount,
+  );
 
   const canConfirm = dateCol && (useDebitCredit ? debitCol : amountCol);
 

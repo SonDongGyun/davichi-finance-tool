@@ -40,6 +40,26 @@ function ToggleButton({ active, onClick, children }) {
 }
 
 function RangePicker({ title, range, onChange, months }) {
+  const startIdx = range.start ? months.indexOf(range.start) : -1;
+  const endIdx = range.end ? months.indexOf(range.end) : -1;
+
+  // Auto-correct rather than silently swap (which masks user intent):
+  // tightening the other endpoint when the user picks an out-of-order value.
+  const handleStartChange = (value) => {
+    const next = { ...range, start: value };
+    if (value && range.end && months.indexOf(value) > months.indexOf(range.end)) {
+      next.end = value;
+    }
+    onChange(next);
+  };
+  const handleEndChange = (value) => {
+    const next = { ...range, end: value };
+    if (value && range.start && months.indexOf(value) < months.indexOf(range.start)) {
+      next.start = value;
+    }
+    onChange(next);
+  };
+
   return (
     <div style={{ flex: 1 }}>
       <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '8px', fontWeight: 500 }}>
@@ -48,20 +68,28 @@ function RangePicker({ title, range, onChange, months }) {
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         <select
           value={range.start}
-          onChange={(e) => onChange({ ...range, start: e.target.value })}
+          onChange={(e) => handleStartChange(e.target.value)}
           style={smallSelectStyle}
         >
           <option value="">시작월</option>
-          {months.map(m => <option key={m} value={m}>{formatMonthLabel(m)}</option>)}
+          {months.map((m, i) => (
+            <option key={m} value={m} disabled={endIdx >= 0 && i > endIdx}>
+              {formatMonthLabel(m)}
+            </option>
+          ))}
         </select>
         <span style={{ color: '#64748b', fontSize: '13px' }}>~</span>
         <select
           value={range.end}
-          onChange={(e) => onChange({ ...range, end: e.target.value })}
+          onChange={(e) => handleEndChange(e.target.value)}
           style={smallSelectStyle}
         >
           <option value="">종료월</option>
-          {months.map(m => <option key={m} value={m}>{formatMonthLabel(m)}</option>)}
+          {months.map((m, i) => (
+            <option key={m} value={m} disabled={startIdx >= 0 && i < startIdx}>
+              {formatMonthLabel(m)}
+            </option>
+          ))}
         </select>
       </div>
     </div>
