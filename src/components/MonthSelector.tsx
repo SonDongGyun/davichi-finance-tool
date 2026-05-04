@@ -1,10 +1,13 @@
 import { motion } from 'framer-motion';
 import { Calendar, ArrowRight } from 'lucide-react';
+import type { CSSProperties, ReactNode } from 'react';
 import { formatMonthLabel } from '../utils/formatters';
 import { GRADIENTS } from '../constants/colors';
 import { cardStyle } from '../styles/common';
+import type { DateRange } from '../types';
+import type { MonthlyMode } from '../state/appReducer';
 
-const selectStyle = {
+const selectStyle: CSSProperties = {
   width: '100%',
   padding: '12px 16px',
   borderRadius: '10px',
@@ -17,9 +20,15 @@ const selectStyle = {
   appearance: 'none',
 };
 
-const smallSelectStyle = { ...selectStyle, padding: '10px 12px', fontSize: '14px' };
+const smallSelectStyle: CSSProperties = { ...selectStyle, padding: '10px 12px', fontSize: '14px' };
 
-function ToggleButton({ active, onClick, children }) {
+interface ToggleButtonProps {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}
+
+function ToggleButton({ active, onClick, children }: ToggleButtonProps) {
   return (
     <button
       onClick={onClick}
@@ -41,21 +50,28 @@ function ToggleButton({ active, onClick, children }) {
   );
 }
 
-function RangePicker({ title, range, onChange, months }) {
+interface RangePickerProps {
+  title: string;
+  range: DateRange;
+  onChange: (range: DateRange) => void;
+  months: string[];
+}
+
+function RangePicker({ title, range, onChange, months }: RangePickerProps) {
   const startIdx = range.start ? months.indexOf(range.start) : -1;
   const endIdx = range.end ? months.indexOf(range.end) : -1;
 
   // Auto-correct rather than silently swap (which masks user intent):
   // tightening the other endpoint when the user picks an out-of-order value.
-  const handleStartChange = (value) => {
-    const next = { ...range, start: value };
+  const handleStartChange = (value: string) => {
+    const next: DateRange = { ...range, start: value };
     if (value && range.end && months.indexOf(value) > months.indexOf(range.end)) {
       next.end = value;
     }
     onChange(next);
   };
-  const handleEndChange = (value) => {
-    const next = { ...range, end: value };
+  const handleEndChange = (value: string) => {
+    const next: DateRange = { ...range, end: value };
     if (value && range.start && months.indexOf(value) < months.indexOf(range.start)) {
       next.start = value;
     }
@@ -98,6 +114,17 @@ function RangePicker({ title, range, onChange, months }) {
   );
 }
 
+interface MonthSelectorProps {
+  months: string[];
+  mode: MonthlyMode;
+  onModeChange: (mode: MonthlyMode) => void;
+  range1: DateRange;
+  range2: DateRange;
+  onRange1Change: (range: DateRange) => void;
+  onRange2Change: (range: DateRange) => void;
+  onAnalyze: () => void;
+}
+
 export default function MonthSelector({
   months,
   mode,
@@ -107,7 +134,7 @@ export default function MonthSelector({
   onRange1Change,
   onRange2Change,
   onAnalyze,
-}) {
+}: MonthSelectorProps) {
   const r1Ok = range1.start && range1.end;
   const r2Ok = range2.start && range2.end;
   const sameRange = range1.start === range2.start && range1.end === range2.end;

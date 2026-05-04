@@ -1,7 +1,7 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, type CSSProperties } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const tabStyle = (active) => ({
+const tabStyle = (active: boolean): CSSProperties => ({
   padding: '7px 16px',
   borderRadius: '8px',
   fontSize: '13px',
@@ -14,8 +14,14 @@ const tabStyle = (active) => ({
   flexShrink: 0,
 });
 
-export default function CategoryTabs({ categories, selected, onSelect }) {
-  const scrollRef = useRef(null);
+interface CategoryTabsProps {
+  categories: string[];
+  selected: string;
+  onSelect: (value: string) => void;
+}
+
+export default function CategoryTabs({ categories, selected, onSelect }: CategoryTabsProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
@@ -33,7 +39,7 @@ export default function CategoryTabs({ categories, selected, onSelect }) {
     return () => el?.removeEventListener('scroll', checkScroll);
   }, [categories]);
 
-  const scroll = (dir) => {
+  const scroll = (dir: number) => {
     const el = scrollRef.current;
     if (el) el.scrollBy({ left: dir * 200, behavior: 'smooth' });
   };

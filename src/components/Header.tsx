@@ -3,7 +3,11 @@ import { BarChart3, Sparkles, TrendingUp, FileSpreadsheet, Zap } from 'lucide-re
 import { useWindowSize } from '../hooks/useWindowSize';
 import { GRADIENTS } from '../constants/colors';
 
-export default function Header({ isCompact }) {
+interface HeaderProps {
+  isCompact?: boolean;
+}
+
+export default function Header({ isCompact }: HeaderProps) {
   const { isMobile: mobile } = useWindowSize();
 
   if (isCompact) {

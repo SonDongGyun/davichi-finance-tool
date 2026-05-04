@@ -1,12 +1,24 @@
 import { COLORS } from '../constants/colors';
+import type { Status } from '../types';
 
-const FILTERS = [
+export type StatusFilterKey = 'all' | Exclude<Status, 'unchanged'>;
+export type StatusFilterCounts = Partial<Record<Exclude<Status, 'unchanged'>, number>>;
+
+const FILTERS: { key: StatusFilterKey; label: string }[] = [
   { key: 'all', label: '전체' },
   { key: 'new', label: '신규' },
   { key: 'removed', label: '제거' },
   { key: 'increased', label: '증가' },
   { key: 'decreased', label: '감소' },
 ];
+
+interface StatusFilterBarProps {
+  value: StatusFilterKey;
+  onChange: (value: StatusFilterKey) => void;
+  counts?: StatusFilterCounts;
+  size?: 'default' | 'compact';
+  marginBottom?: number;
+}
 
 // Used by DetailTable (default size) and VendorTable (compact size).
 // counts: { new, removed, increased, decreased } — pre-computed by parent so
@@ -17,7 +29,7 @@ export default function StatusFilterBar({
   counts,
   size = 'default',
   marginBottom = 24,
-}) {
+}: StatusFilterBarProps) {
   const isCompact = size === 'compact';
   const padding = isCompact ? '6px 14px' : '8px 16px';
   const fontSize = isCompact ? '12px' : '13px';

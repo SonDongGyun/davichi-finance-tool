@@ -1,14 +1,21 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Plus, Minus, ArrowUpRight, ArrowDownRight, Equal, AlertTriangle } from 'lucide-react';
-import { formatMoney, formatMonthLabel } from '../utils/formatters';
-import { GRADIENTS, STATUS_COLORS } from '../constants/colors';
 import { useEffect, useRef, useState } from 'react';
+import { formatMoney, formatMonthLabel } from '../utils/formatters';
+import { GRADIENTS } from '../constants/colors';
+import type { AnalysisResult } from '../types';
 
 const ANIMATION_DURATION_MS = 1500;
 
+interface AnimatedNumberProps {
+  value: number;
+  prefix?: string;
+  suffix?: string;
+}
+
 // Animates from the currently displayed value to the new target on each prop change,
 // using requestAnimationFrame so cleanup cancels in-flight frames cleanly.
-function AnimatedNumber({ value, prefix = '', suffix = '' }) {
+function AnimatedNumber({ value, prefix = '', suffix = '' }: AnimatedNumberProps) {
   const [display, setDisplay] = useState(0);
   const startRef = useRef(0);
 
@@ -16,10 +23,10 @@ function AnimatedNumber({ value, prefix = '', suffix = '' }) {
     if (value === startRef.current) return;
     const startValue = startRef.current;
     const targetValue = value;
-    let startTime = null;
-    let frameId = null;
+    let startTime: number | null = null;
+    let frameId: number | null = null;
 
-    const tick = (timestamp) => {
+    const tick = (timestamp: number) => {
       if (startTime === null) startTime = timestamp;
       const t = Math.min((timestamp - startTime) / ANIMATION_DURATION_MS, 1);
       const eased = 1 - Math.pow(1 - t, 3);
@@ -40,7 +47,11 @@ function AnimatedNumber({ value, prefix = '', suffix = '' }) {
   return <span>{prefix}{formatMoney(display)}{suffix}</span>;
 }
 
-export default function SummaryCards({ result }) {
+interface SummaryCardsProps {
+  result: AnalysisResult;
+}
+
+export default function SummaryCards({ result }: SummaryCardsProps) {
   const { month1, month2, totalDiff, totalPctChange, newItems, removedItems, increasedItems, decreasedItems, skippedRowCount } = result;
 
   const cards = [

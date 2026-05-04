@@ -1,7 +1,13 @@
-import { Plus, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Plus, Minus, ArrowUpRight, ArrowDownRight, type LucideIcon } from 'lucide-react';
 import { STATUS_COLORS } from '../constants/colors';
+import type { Status } from '../types';
 
-const META = {
+interface StatusMeta {
+  label: string;
+  Icon: LucideIcon | null;
+}
+
+const META: Record<Status, StatusMeta> = {
   new:       { label: '신규', Icon: Plus },
   removed:   { label: '제거', Icon: Minus },
   increased: { label: '증가', Icon: ArrowUpRight },
@@ -9,9 +15,14 @@ const META = {
   unchanged: { label: '동일', Icon: null },
 };
 
+interface StatusBadgeProps {
+  status: Status;
+  variant?: 'default' | 'compact';
+}
+
 // "default" variant ships with an icon + border (DetailTable header column);
 // "compact" is the borderless pill VendorTable uses inside dense rows.
-export default function StatusBadge({ status, variant = 'default' }) {
+export default function StatusBadge({ status, variant = 'default' }: StatusBadgeProps) {
   const c = STATUS_COLORS[status];
   const m = META[status];
   if (!c || !m) return null;

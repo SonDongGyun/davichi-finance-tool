@@ -1,6 +1,17 @@
 import { Search, X } from 'lucide-react';
 import { COLORS } from '../constants/colors';
 
+interface SearchInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+  term: string;
+  onClear: () => void;
+  placeholder?: string;
+  ariaLabel?: string;
+  width?: number;
+}
+
 // Reused by DetailTable and VendorTable. Press-Enter-to-apply pattern with
 // an "active" highlight + clear button while a term is committed.
 export default function SearchInput({
@@ -12,7 +23,7 @@ export default function SearchInput({
   placeholder,
   ariaLabel,
   width = 260,
-}) {
+}: SearchInputProps) {
   return (
     <div style={{ position: 'relative' }}>
       <Search style={{
