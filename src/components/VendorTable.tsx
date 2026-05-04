@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatMoney, formatMonthLabel } from '../utils/formatters';
@@ -6,22 +6,30 @@ import { smoothScrollTo } from '../utils/scroll';
 import CategoryTabs from './CategoryTabs';
 import StatusBadge from './StatusBadge';
 import SearchInput from './SearchInput';
-import StatusFilterBar from './StatusFilterBar';
+import StatusFilterBar, { type StatusFilterKey, type StatusFilterCounts } from './StatusFilterBar';
 import { cardStyle } from '../styles/common';
+import type { AnalysisResult } from '../types';
 
 const DEFAULT_COUNT = 15;
 const PAGE_SIZE = 10;
 
-export default function VendorTable({ result }) {
+type VendorSortKey = 'category' | 'vendor' | 'prev' | 'curr' | 'diff';
+type SortDir = 'asc' | 'desc';
+
+interface VendorTableProps {
+  result: AnalysisResult;
+}
+
+export default function VendorTable({ result }: VendorTableProps) {
   const [visibleCount, setVisibleCount] = useState(DEFAULT_COUNT);
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState<StatusFilterKey>('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [sortBy, setSortBy] = useState('category');
-  const [sortDir, setSortDir] = useState('asc');
-  const [expandedRow, setExpandedRow] = useState(null);
-  const sectionRef = useRef(null);
+  const [sortBy, setSortBy] = useState<VendorSortKey>('category');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
 
   const categories = useMemo(() => {
     const cats = [...new Set(result.vendorComparison.map(v => v.category))];
@@ -30,12 +38,12 @@ export default function VendorTable({ result }) {
   }, [result.vendorComparison]);
 
   // Counts respect the active category tab (but not the search/status filter
-   // itself), matching the previous inline computation.
-  const filterCounts = useMemo(() => {
-    const c = { new: 0, removed: 0, increased: 0, decreased: 0 };
+  // itself), matching the previous inline computation.
+  const filterCounts = useMemo<StatusFilterCounts>(() => {
+    const c: StatusFilterCounts = { new: 0, removed: 0, increased: 0, decreased: 0 };
     result.vendorComparison.forEach(item => {
       if (selectedCategory !== 'all' && item.category !== selectedCategory) return;
-      if (item.status in c) c[item.status]++;
+      if (item.status in c) c[item.status] = (c[item.status] ?? 0) + 1;
     });
     return c;
   }, [result.vendorComparison, selectedCategory]);
@@ -51,7 +59,7 @@ export default function VendorTable({ result }) {
       const term = searchTerm.toLowerCase();
       arr = arr.filter(item =>
         item.vendor.toLowerCase().includes(term) ||
-        item.category.toLowerCase().includes(term)
+        item.category.toLowerCase().includes(term),
       );
     }
 
@@ -75,17 +83,17 @@ export default function VendorTable({ result }) {
   const data = filtered.slice(0, visibleCount);
   const remaining = filtered.length - visibleCount;
 
-  const handleSort = (col) => {
+  const handleSort = (col: VendorSortKey) => {
     if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortBy(col); setSortDir(col === 'diff' ? 'desc' : 'asc'); }
   };
 
-  const handleCategoryChange = (cat) => {
+  const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
     setVisibleCount(DEFAULT_COUNT);
   };
 
-  const thStyle = (clickable) => ({
+  const thStyle = (clickable: boolean): CSSProperties => ({
     padding: '14px 16px',
     fontSize: '12px', fontWeight: 700, color: '#94a3b8',
     textTransform: 'uppercase', letterSpacing: '0.05em',
@@ -94,11 +102,11 @@ export default function VendorTable({ result }) {
     userSelect: 'none',
   });
 
-  const tdStyle = {
+  const tdStyle: CSSProperties = {
     padding: '14px 16px', fontSize: '14px',
   };
 
-  const btnStyle = {
+  const btnStyle: CSSProperties = {
     padding: '10px 16px', borderRadius: '8px',
     fontSize: '13px', fontWeight: 600, flex: 1,
     background: 'rgba(100,116,139,0.1)', color: '#94a3b8',
@@ -157,11 +165,11 @@ export default function VendorTable({ result }) {
             <thead>
               <tr style={{ borderBottom: '2px solid rgba(51,65,85,0.5)' }}>
                 {[
-                  ...(selectedCategory === 'all' ? [{ key: 'category', label: '계정과목', align: 'left' }] : []),
-                  { key: 'vendor', label: '거래처', align: 'left' },
-                  { key: 'prev', label: '이전', align: 'right' },
-                  { key: 'curr', label: '현재', align: 'right' },
-                  { key: 'diff', label: '증감', align: 'right' },
+                  ...(selectedCategory === 'all' ? [{ key: 'category' as const, label: '계정과목', align: 'left' as const }] : []),
+                  { key: 'vendor' as const, label: '거래처', align: 'left' as const },
+                  { key: 'prev' as const, label: '이전', align: 'right' as const },
+                  { key: 'curr' as const, label: '현재', align: 'right' as const },
+                  { key: 'diff' as const, label: '증감', align: 'right' as const },
                 ].map(col => (
                   <th
                     key={col.key}

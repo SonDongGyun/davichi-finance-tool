@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, type CSSProperties, type RefObject } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquareText, PlusCircle, MinusCircle, AlertTriangle, ChevronDown, SlidersHorizontal } from 'lucide-react';
 import { formatMoney, formatMonthLabel } from '../utils/formatters';
@@ -7,8 +7,9 @@ import { COLORS, STATUS_COLORS } from '../constants/colors';
 import { cardStyle } from '../styles/common';
 import { UNCATEGORIZED } from '../constants/defaults';
 import CategoryTabs from './CategoryTabs';
+import type { AnalysisResult, CategoryComparison } from '../types';
 
-function fmt(amount) {
+function fmt(amount: number): string {
   return formatMoney(Math.abs(amount));
 }
 
@@ -23,7 +24,7 @@ const THRESHOLD_OPTIONS = [
   { label: '500만원 이상', value: 5000000 },
 ];
 
-const listBtnStyle = {
+const listBtnStyle: CSSProperties = {
   padding: '8px 16px',
   borderRadius: '8px', fontSize: '12px', fontWeight: 600,
   background: 'rgba(100,116,139,0.1)', color: '#94a3b8',
@@ -31,7 +32,21 @@ const listBtnStyle = {
   cursor: 'pointer', flex: 1,
 };
 
-function KeyChangeItem({ item, type }) {
+type KeyChangeType = 'new' | 'removed';
+type LineType = 'increase' | 'decrease' | 'new' | 'removed' | 'neutral';
+
+interface SummaryLine {
+  type: LineType;
+  category: string | null;
+  text: string;
+}
+
+interface KeyChangeItemProps {
+  item: CategoryComparison;
+  type: KeyChangeType;
+}
+
+function KeyChangeItem({ item, type }: KeyChangeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const isNew = type === 'new';
   const amount = isNew ? item.currAmount : item.prevAmount;
@@ -110,7 +125,13 @@ function KeyChangeItem({ item, type }) {
   );
 }
 
-function KeyChangeList({ items, type, parentRef }) {
+interface KeyChangeListProps {
+  items: CategoryComparison[];
+  type: KeyChangeType;
+  parentRef: RefObject<HTMLDivElement | null>;
+}
+
+function KeyChangeList({ items, type, parentRef }: KeyChangeListProps) {
   const [visibleCount, setVisibleCount] = useState(DEFAULT_SHOW_COUNT);
   const visible = items.slice(0, visibleCount);
   const remaining = items.length - visibleCount;
@@ -150,8 +171,8 @@ function KeyChangeList({ items, type, parentRef }) {
   );
 }
 
-function generateSummaryLines(result) {
-  const lines = [];
+function generateSummaryLines(result: AnalysisResult): SummaryLine[] {
+  const lines: SummaryLine[] = [];
   const m1Label = formatMonthLabel(result.month1.label);
   const m2Label = formatMonthLabel(result.month2.label);
 
@@ -188,7 +209,7 @@ function generateSummaryLines(result) {
   return lines;
 }
 
-const dotColors = {
+const dotColors: Record<LineType, string> = {
   increase: STATUS_COLORS.increased.fg,
   decrease: STATUS_COLORS.decreased.fg,
   new: STATUS_COLORS.new.fg,
@@ -196,7 +217,12 @@ const dotColors = {
   neutral: STATUS_COLORS.unchanged.fg,
 };
 
-function CategorySummaryCard({ category, result }) {
+interface CategorySummaryCardProps {
+  category: string;
+  result: AnalysisResult;
+}
+
+function CategorySummaryCard({ category, result }: CategorySummaryCardProps) {
   const items = result.categoryComparison.filter(c => c.category === category);
   if (items.length === 0) return null;
   const item = items[0];
@@ -233,11 +259,15 @@ function CategorySummaryCard({ category, result }) {
   );
 }
 
-export default function AnalysisSummary({ result }) {
+interface AnalysisSummaryProps {
+  result: AnalysisResult;
+}
+
+export default function AnalysisSummary({ result }: AnalysisSummaryProps) {
   const [threshold, setThreshold] = useState(100000);
   const [visibleLineCount, setVisibleLineCount] = useState(DEFAULT_SHOW_COUNT);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const sectionRef = useRef(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
 
   const allLines = useMemo(() => generateSummaryLines(result), [result]);
 
@@ -247,7 +277,7 @@ export default function AnalysisSummary({ result }) {
     return cats;
   }, [result.categoryComparison]);
 
-  const handleCategoryChange = (cat) => {
+  const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
     setVisibleLineCount(DEFAULT_SHOW_COUNT);
   };

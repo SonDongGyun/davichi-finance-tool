@@ -1,13 +1,19 @@
-import React, { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo, type CSSProperties } from 'react';
+import { motion } from 'framer-motion';
 import { ChevronDown, ChevronUp, Filter } from 'lucide-react';
 import { formatMoney, formatMonthLabel } from '../utils/formatters';
 import StatusBadge from './StatusBadge';
 import SearchInput from './SearchInput';
-import StatusFilterBar from './StatusFilterBar';
+import StatusFilterBar, { type StatusFilterKey, type StatusFilterCounts } from './StatusFilterBar';
 import { cardStyle } from '../styles/common';
+import type { AnalysisResult, CategoryComparison } from '../types';
 
-function ExpandedRow({ item, result }) {
+interface ExpandedRowProps {
+  item: CategoryComparison;
+  result: AnalysisResult;
+}
+
+function ExpandedRow({ item, result }: ExpandedRowProps) {
   return (
     <tr>
       <td colSpan={6} style={{ padding: '16px 24px' }}>
@@ -56,18 +62,26 @@ function ExpandedRow({ item, result }) {
   );
 }
 
-export default function DetailTable({ result }) {
-  const [filter, setFilter] = useState('all');
+type DetailSortKey = 'category' | 'prev' | 'curr' | 'diff';
+type SortDir = 'asc' | 'desc';
+
+interface DetailTableProps {
+  result: AnalysisResult;
+}
+
+export default function DetailTable({ result }: DetailTableProps) {
+  const [filter, setFilter] = useState<StatusFilterKey>('all');
   const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedRow, setExpandedRow] = useState(null);
-  const [sortBy, setSortBy] = useState('diff');
-  const [sortDir, setSortDir] = useState('desc');
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<DetailSortKey>('diff');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
-  const filterCounts = useMemo(() => {
-    const c = { new: 0, removed: 0, increased: 0, decreased: 0 };
+  const filterCounts = useMemo<StatusFilterCounts>(() => {
+    const c: StatusFilterCounts = { new: 0, removed: 0, increased: 0, decreased: 0 };
     result.categoryComparison.forEach(item => {
-      if (item.status in c) c[item.status]++;
+      if (item.status === 'unchanged') return;
+      c[item.status] = (c[item.status] ?? 0) + 1;
     });
     return c;
   }, [result.categoryComparison]);
@@ -90,12 +104,12 @@ export default function DetailTable({ result }) {
     });
   }, [result.categoryComparison, filter, searchTerm, sortBy, sortDir]);
 
-  const handleSort = (col) => {
+  const handleSort = (col: DetailSortKey) => {
     if (sortBy === col) setSortDir(d => d === 'desc' ? 'asc' : 'desc');
     else { setSortBy(col); setSortDir('desc'); }
   };
 
-  const thStyle = (clickable) => ({
+  const thStyle = (clickable: boolean): CSSProperties => ({
     textAlign: 'left', padding: '14px 16px',
     fontSize: '12px', fontWeight: 700, color: '#94a3b8',
     textTransform: 'uppercase', letterSpacing: '0.05em',
@@ -103,7 +117,7 @@ export default function DetailTable({ result }) {
     whiteSpace: 'nowrap', userSelect: 'none',
   });
 
-  const tdStyle = {
+  const tdStyle: CSSProperties = {
     padding: '14px 16px', fontSize: '14px',
   };
 
@@ -142,15 +156,15 @@ export default function DetailTable({ result }) {
             <thead>
               <tr style={{ borderBottom: '2px solid rgba(51,65,85,0.5)' }}>
                 {[
-                  { key: 'category', label: '카테고리' },
-                  { key: 'prev', label: formatMonthLabel(result.month1.label) },
-                  { key: 'curr', label: formatMonthLabel(result.month2.label) },
-                  { key: 'diff', label: '증감액' },
-                  { key: 'status', label: '상태' },
+                  { key: 'category' as const, label: '카테고리' },
+                  { key: 'prev' as const, label: formatMonthLabel(result.month1.label) },
+                  { key: 'curr' as const, label: formatMonthLabel(result.month2.label) },
+                  { key: 'diff' as const, label: '증감액' },
+                  { key: 'status' as const, label: '상태' },
                 ].map(col => (
                   <th
                     key={col.key}
-                    onClick={() => col.key !== 'status' && handleSort(col.key)}
+                    onClick={() => col.key !== 'status' && handleSort(col.key as DetailSortKey)}
                     style={thStyle(col.key !== 'status')}
                   >
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>

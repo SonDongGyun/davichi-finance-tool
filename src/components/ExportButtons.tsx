@@ -1,10 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import { FileDown, FileText, Presentation, Loader2 } from 'lucide-react';
+import type { AnalysisResult } from '../types';
 
-export default function ExportButtons({ result }) {
-  const [loading, setLoading] = useState(null);
-  const [error, setError] = useState(null);
+type ExportKind = 'pdf' | 'pptx';
+
+interface ExportButtonsProps {
+  result: AnalysisResult;
+}
+
+export default function ExportButtons({ result }: ExportButtonsProps) {
+  const [loading, setLoading] = useState<ExportKind | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (error) {
@@ -39,7 +46,7 @@ export default function ExportButtons({ result }) {
     setLoading(null);
   };
 
-  const btnStyle = {
+  const btnStyle: CSSProperties = {
     display: 'flex', alignItems: 'center', gap: '6px',
     padding: '8px 16px',
     borderRadius: '8px',

@@ -1,21 +1,31 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type DragEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useWindowSize } from '../hooks/useWindowSize';
 import { MAX_FILE_SIZE_BYTES, ACCEPTED_UPLOAD_EXTS } from '../constants/limits';
 
-export default function FileUpload({ onFileLoaded, isLoaded }) {
+interface FileUploadProps {
+  onFileLoaded: (file: File) => Promise<void> | void;
+  isLoaded: boolean;
+}
+
+function clickFileInput(): void {
+  const el = document.getElementById('file-input') as HTMLInputElement | null;
+  el?.click();
+}
+
+export default function FileUpload({ onFileLoaded, isLoaded }: FileUploadProps) {
   const { isMobile } = useWindowSize();
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
 
-  const handleFile = useCallback(async (file) => {
+  const handleFile = useCallback(async (file: File | undefined) => {
     if (!file) return;
 
-    const ext = file.name.split('.').pop().toLowerCase();
-    if (!ACCEPTED_UPLOAD_EXTS.includes(ext)) {
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+    if (!ACCEPTED_UPLOAD_EXTS.includes(ext as typeof ACCEPTED_UPLOAD_EXTS[number])) {
       setError('엑셀 파일(.xlsx, .xls) 또는 CSV 파일만 업로드 가능합니다.');
       return;
     }
@@ -33,20 +43,20 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
     try {
       await onFileLoaded(file);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : '파일 처리 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
   }, [onFileLoaded]);
 
-  const handleDrop = useCallback((e) => {
+  const handleDrop = useCallback((e: DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     handleFile(file);
   }, [handleFile]);
 
-  const handleDragOver = useCallback((e) => {
+  const handleDragOver = useCallback((e: DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
   }, []);
@@ -70,14 +80,14 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onClick={() => !isLoaded && document.getElementById('file-input').click()}
+        onClick={() => !isLoaded && clickFileInput()}
         role="button"
         tabIndex={0}
         aria-label="엑셀 파일 업로드 (드래그 앤 드롭 또는 클릭)"
         onKeyDown={(e) => {
           if ((e.key === 'Enter' || e.key === ' ') && !isLoaded) {
             e.preventDefault();
-            document.getElementById('file-input').click();
+            clickFileInput();
           }
         }}
         className={
@@ -106,7 +116,7 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
           accept=".xlsx,.xls,.csv"
           style={{ display: 'none' }}
           onChange={(e) => {
-            const file = e.target.files[0];
+            const file = e.target.files?.[0];
             // Reset value so re-selecting the same file fires onChange again
             // — without this, browsers suppress the event for identical files.
             e.target.value = '';
@@ -157,7 +167,7 @@ export default function FileUpload({ onFileLoaded, isLoaded }) {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  document.getElementById('file-input').click();
+                  clickFileInput();
                 }}
                 style={{
                   marginTop: '8px', padding: '8px 16px', borderRadius: '8px',

@@ -1,9 +1,17 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Loader2, X } from 'lucide-react';
 import { GRADIENTS } from '../constants/colors';
 
-export default function PasswordModal({ isOpen, onSubmit, onClose, error, isLoading }) {
+interface PasswordModalProps {
+  isOpen: boolean;
+  onSubmit: (password: string) => void;
+  onClose: () => void;
+  error?: string;
+  isLoading?: boolean;
+}
+
+export default function PasswordModal({ isOpen, onSubmit, onClose, error, isLoading }: PasswordModalProps) {
   const [password, setPassword] = useState('');
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
   const submittingRef = useRef(false);
@@ -21,14 +29,14 @@ export default function PasswordModal({ isOpen, onSubmit, onClose, error, isLoad
 
   useEffect(() => {
     if (!isOpen) return;
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isLoading) onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isLoading, onClose]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (submittingRef.current) return;
     if (password.trim()) {

@@ -1,14 +1,23 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Settings2, CheckCircle2 } from 'lucide-react';
 import {
   detectDateColumn, detectAmountColumns,
-  detectCategoryColumn, detectDescriptionColumn, detectVendorColumn
+  detectCategoryColumn, detectDescriptionColumn, detectVendorColumn,
 } from '../utils/excel/detector';
 import { GRADIENTS } from '../constants/colors';
 import { cardStyle, selectStyle, labelStyle } from '../styles/common';
+import type { ColumnConfig } from '../types';
 
-function SelectField({ label, value, onChange, required, headers }) {
+interface SelectFieldProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  required?: boolean;
+  headers: string[];
+}
+
+function SelectField({ label, value, onChange, required, headers }: SelectFieldProps) {
   return (
     <div>
       <label style={labelStyle}>
@@ -22,7 +31,12 @@ function SelectField({ label, value, onChange, required, headers }) {
   );
 }
 
-export default function ColumnMapper({ headers, onConfirm }) {
+interface ColumnMapperProps {
+  headers: string[];
+  onConfirm: (config: ColumnConfig) => void;
+}
+
+export default function ColumnMapper({ headers, onConfirm }: ColumnMapperProps) {
   // Single detection pass; previously detectAmountColumns ran four times during
   // initial state setup.
   const detected = useMemo(() => ({
@@ -33,14 +47,14 @@ export default function ColumnMapper({ headers, onConfirm }) {
     vendor: detectVendorColumn(headers),
   }), [headers]);
 
-  const [dateCol, setDateCol] = useState(() => detected.date || '');
-  const [debitCol, setDebitCol] = useState(() => detected.amount.debit || '');
-  const [creditCol, setCreditCol] = useState(() => detected.amount.credit || '');
-  const [amountCol, setAmountCol] = useState(() => detected.amount.amount || '');
-  const [categoryCol, setCategoryCol] = useState(() => detected.category || '');
-  const [descCol, setDescCol] = useState(() => detected.description || '');
-  const [vendorCol, setVendorCol] = useState(() => detected.vendor || '');
-  const [useDebitCredit, setUseDebitCredit] = useState(
+  const [dateCol, setDateCol] = useState<string>(() => detected.date || '');
+  const [debitCol, setDebitCol] = useState<string>(() => detected.amount.debit || '');
+  const [creditCol, setCreditCol] = useState<string>(() => detected.amount.credit || '');
+  const [amountCol, setAmountCol] = useState<string>(() => detected.amount.amount || '');
+  const [categoryCol, setCategoryCol] = useState<string>(() => detected.category || '');
+  const [descCol, setDescCol] = useState<string>(() => detected.description || '');
+  const [vendorCol, setVendorCol] = useState<string>(() => detected.vendor || '');
+  const [useDebitCredit, setUseDebitCredit] = useState<boolean>(
     () => Boolean(detected.amount.debit) || !detected.amount.amount,
   );
 
@@ -58,7 +72,7 @@ export default function ColumnMapper({ headers, onConfirm }) {
     });
   };
 
-  const tabBtn = (active, label, onClick) => (
+  const tabBtn = (active: boolean, label: ReactNode, onClick: () => void) => (
     <button
       onClick={onClick}
       style={{
