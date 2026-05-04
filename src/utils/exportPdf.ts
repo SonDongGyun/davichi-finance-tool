@@ -1,13 +1,20 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatMoney, formatMonthLabel } from './formatters';
+import type { AnalysisResult, Status } from '../types';
 
-const STATUS_KR = { new: '신규', removed: '제거', increased: '증가', decreased: '감소', unchanged: '동일' };
+const STATUS_KR: Record<Status, string> = {
+  new: '신규',
+  removed: '제거',
+  increased: '증가',
+  decreased: '감소',
+  unchanged: '동일',
+};
 const FONT_NAME = 'NanumGothic';
 
 let fontLoadFailed = false;
 
-async function loadKoreanFont(doc) {
+async function loadKoreanFont(doc: jsPDF): Promise<void> {
   fontLoadFailed = false;
   try {
     const fontUrl = import.meta.env.BASE_URL + 'fonts/NanumGothic-Regular.ttf';
@@ -19,18 +26,19 @@ async function loadKoreanFont(doc) {
     const chunkSize = 8192;
     for (let i = 0; i < bytes.length; i += chunkSize) {
       const chunk = bytes.subarray(i, i + chunkSize);
-      binary += String.fromCharCode.apply(null, chunk);
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
     }
     const base64 = btoa(binary);
     doc.addFileToVFS('NanumGothic.ttf', base64);
     doc.addFont('NanumGothic.ttf', FONT_NAME, 'normal');
   } catch (err) {
     fontLoadFailed = true;
-    console.warn('Korean font loading failed, falling back to Helvetica:', err.message);
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn('Korean font loading failed, falling back to Helvetica:', message);
   }
 }
 
-function setFont(doc) {
+function setFont(doc: jsPDF): void {
   if (fontLoadFailed) {
     doc.setFont('Helvetica', 'normal');
   } else {
@@ -38,7 +46,7 @@ function setFont(doc) {
   }
 }
 
-function addPageFooter(doc, pageNum, totalPages, m1, m2) {
+function addPageFooter(doc: jsPDF, pageNum: number, totalPages: number, m1: string, m2: string): void {
   const pw = doc.internal.pageSize.getWidth();
   const ph = doc.internal.pageSize.getHeight();
   setFont(doc);
@@ -51,9 +59,11 @@ function addPageFooter(doc, pageNum, totalPages, m1, m2) {
   doc.line(14, ph - 12, pw - 14, ph - 12);
 }
 
-function addSectionTitle(doc, title, y, color = [30, 64, 175]) {
+type RGB = [number, number, number];
+
+function addSectionTitle(doc: jsPDF, title: string, y: number, color: RGB = [30, 64, 175]): number {
   setFont(doc);
-  doc.setFillColor(...color);
+  doc.setFillColor(color[0], color[1], color[2]);
   doc.rect(14, y - 1, 4, 7, 'F');
   doc.setFontSize(13);
   doc.setTextColor(30, 41, 59);
@@ -61,12 +71,24 @@ function addSectionTitle(doc, title, y, color = [30, 64, 175]) {
   return y + 12;
 }
 
-function newPage(doc) {
+function newPage(doc: jsPDF): void {
   doc.addPage();
   setFont(doc);
 }
 
-function buildCategorySummary(result) {
+interface CategorySummaryItem {
+  category: string;
+  prevAmount: number;
+  currAmount: number;
+  diff: number;
+  pctChange: number;
+  status: Status;
+  vendorCount: number;
+  newVendors: number;
+  removedVendors: number;
+}
+
+function buildCategorySummary(result: AnalysisResult): CategorySummaryItem[] {
   const categories = [...new Set(result.categoryComparison.map(c => c.category))];
   categories.sort((a, b) => a.localeCompare(b));
 
@@ -87,7 +109,7 @@ function buildCategorySummary(result) {
   });
 }
 
-export async function exportPdf(result) {
+export async function exportPdf(result: AnalysisResult): Promise<void> {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   await loadKoreanFont(doc);
   setFont(doc);
@@ -147,7 +169,7 @@ export async function exportPdf(result) {
   const maxTextW = pw - 48;
   const lineH = 5.5;
 
-  const insightItems = [];
+  const insightItems: string[] = [];
 
   if (result.totalDiff > 0) {
     insightItems.push(`전월 대비 총 비용이 ${formatMoney(result.totalDiff)}원 증가하였습니다 (${diffSign}${result.totalPctChange}%).`);
@@ -239,8 +261,10 @@ export async function exportPdf(result) {
       data.cell.styles.font = FONT_NAME;
       if (data.section === 'body' && data.column.index === 3) {
         const val = catSummary[data.row.index]?.diff;
-        if (val > 0) data.cell.styles.textColor = [220, 38, 38];
-        else if (val < 0) data.cell.styles.textColor = [5, 150, 105];
+        if (val !== undefined) {
+          if (val > 0) data.cell.styles.textColor = [220, 38, 38];
+          else if (val < 0) data.cell.styles.textColor = [5, 150, 105];
+        }
       }
       if (data.section === 'body' && data.column.index === 5) {
         const status = catSummary[data.row.index]?.status;
@@ -254,7 +278,8 @@ export async function exportPdf(result) {
   });
 
   // ════════════════ Page numbers ════════════════
-  const totalPages = doc.internal.getNumberOfPages();
+  // jsPDF runtime exposes getNumberOfPages() but it isn't in the published types.
+  const totalPages = (doc.internal as unknown as { getNumberOfPages(): number }).getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     setFont(doc);
