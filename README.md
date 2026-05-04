@@ -1,5 +1,7 @@
 # 다비치 재무팀 분석 툴
 
+[![CI](https://github.com/SonDongGyun/davichi-finance-tool/actions/workflows/ci.yml/badge.svg)](https://github.com/SonDongGyun/davichi-finance-tool/actions/workflows/ci.yml)
+
 엑셀 재무 데이터를 업로드해 월별·연도별 비용 증감을 자동으로 분석하고, 신규/소멸 항목과 주요 변동 사항을 PDF·PPTX 보고서로 출력하는 React + Vite SPA.
 
 ## 주요 기능
@@ -16,11 +18,15 @@
 
 ```bash
 npm install
-npm run dev      # 개발 서버 (Vite, http://localhost:5173)
-npm run lint     # ESLint
-npm run build    # 프로덕션 빌드 → dist/
-npm run preview  # 빌드 결과 미리보기
+npm run dev         # 개발 서버 (Vite, http://localhost:5173)
+npm run lint        # ESLint
+npm test            # Vitest 단위 테스트 (utils 영역)
+npm run test:watch  # 테스트 watch 모드
+npm run build       # 프로덕션 빌드 → dist/
+npm run preview     # 빌드 결과 미리보기
 ```
+
+PR과 main 푸쉬 시 GitHub Actions에서 lint + test + build를 자동으로 검증합니다.
 
 ## 디렉터리 구조
 
