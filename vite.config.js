@@ -23,7 +23,7 @@ export default defineConfig({
     // surface we test (badges, inputs, file pickers) doesn't need jsdom's
     // edge-case fidelity.
     environment: 'happy-dom',
-    include: ['src/**/*.test.{js,jsx}'],
+    include: ['src/**/*.test.{js,jsx,ts,tsx}'],
     setupFiles: ['./src/test/setup.js'],
   },
 })
