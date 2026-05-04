@@ -1,39 +1,41 @@
 import * as XLSX from 'xlsx';
 import { parseWorkbook } from '../utils/excel/parser';
 
+// Sends the file as a raw binary body and the password in an X-Password header
+// (URL-encoded so non-ASCII passwords are header-safe). This avoids the
+// 1.33x base64 inflation that previously doubled memory usage on large files.
 export async function decryptAndParse(file, password) {
   const arrayBuffer = await file.arrayBuffer();
-  const base64 = btoa(
-    new Uint8Array(arrayBuffer).reduce((s, b) => s + String.fromCharCode(b), '')
-  );
 
   const res = await fetch('/api/decrypt', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ file: base64, password }),
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'X-Password': encodeURIComponent(password),
+    },
+    body: arrayBuffer,
   });
 
   const contentType = res.headers.get('Content-Type') || '';
-  if (!contentType.includes('application/json')) {
-    if (res.status === 413) {
-      throw new Error('파일 크기가 너무 큽니다. 더 작은 파일을 업로드해주세요.');
+
+  // Server returns JSON only on errors. Octet-stream means success.
+  if (contentType.includes('application/json')) {
+    let message = '복호화에 실패했습니다.';
+    try {
+      const data = await res.json();
+      if (data?.error) message = data.error;
+    } catch {
+      // Fall back to status-derived message below.
     }
+    if (res.status === 413) message = '파일 크기가 너무 큽니다. 더 작은 파일을 업로드해주세요.';
+    throw new Error(message);
+  }
+
+  if (!res.ok) {
     throw new Error(`서버 오류가 발생했습니다. (${res.status})`);
   }
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.error || '복호화에 실패했습니다.');
-  }
-
-  // base64 → Uint8Array → XLSX parse
-  const decoded = atob(data.file);
-  const bytes = new Uint8Array(decoded.length);
-  for (let i = 0; i < decoded.length; i++) {
-    bytes[i] = decoded.charCodeAt(i);
-  }
-
-  const workbook = XLSX.read(bytes, { type: 'array' });
+  const decryptedBuffer = await res.arrayBuffer();
+  const workbook = XLSX.read(new Uint8Array(decryptedBuffer), { type: 'array' });
   return parseWorkbook(workbook);
 }
