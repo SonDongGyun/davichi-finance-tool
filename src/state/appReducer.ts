@@ -5,13 +5,48 @@ import {
   STEP_SELECT,
   STEP_RESULT,
   MODE_MONTHLY,
+  type Step,
+  type AppMode,
 } from '../constants/steps';
+import type {
+  AnalysisResult,
+  ColumnConfig,
+  DateRange,
+  ParsedFile,
+  SheetInfo,
+  SideSelection,
+} from '../types';
 
-export const EMPTY_RANGE = { start: '', end: '' };
-export const EMPTY_SIDE = { sheetName: '', checkedMonths: new Set() };
-export const PASSWORD_INITIAL = { open: false, file: null, error: '', loading: false };
+export interface PasswordState {
+  open: boolean;
+  file: File | null;
+  error: string;
+  loading: boolean;
+}
 
-export const initialState = {
+export type MonthlyMode = 'single' | 'range';
+
+export interface AppState {
+  step: Step;
+  mode: AppMode;
+  fileData: ParsedFile | null;
+  columnConfig: ColumnConfig | null;
+  months: string[];
+  monthlyMode: MonthlyMode;
+  range1: DateRange;
+  range2: DateRange;
+  sheetInfos: SheetInfo[];
+  side1: SideSelection;
+  side2: SideSelection;
+  analysisResult: AnalysisResult | null;
+  password: PasswordState;
+}
+
+export const EMPTY_RANGE: DateRange = { start: '', end: '' };
+export const EMPTY_SIDE: SideSelection = { sheetName: '', checkedMonths: new Set() };
+export const PASSWORD_INITIAL: PasswordState = { open: false, file: null, error: '', loading: false };
+
+export const initialState: AppState = {
   step: STEP_LANDING,
   mode: MODE_MONTHLY,
   fileData: null,
@@ -27,10 +62,37 @@ export const initialState = {
   password: PASSWORD_INITIAL,
 };
 
+// Discriminated union — every dispatcher gets exhaustive type checking.
+export type AppAction =
+  | { type: 'SELECT_MODE'; mode: AppMode }
+  | { type: 'BACK_TO_LANDING' }
+  | { type: 'FILE_PARSED'; parsed: ParsedFile }
+  | { type: 'PASSWORD_REQUIRED'; file: File }
+  | { type: 'PASSWORD_SUBMITTING' }
+  | { type: 'PASSWORD_FAILED'; error: string }
+  | { type: 'PASSWORD_CLOSED' }
+  | {
+      type: 'COLUMN_CONFIRMED';
+      config: ColumnConfig;
+      months?: string[];
+      sheetInfos?: SheetInfo[];
+      range1?: DateRange;
+      range2?: DateRange;
+      side1?: SideSelection;
+      side2?: SideSelection;
+    }
+  | { type: 'ANALYSIS_DONE'; result: AnalysisResult }
+  | { type: 'BACK_TO_SELECT' }
+  | { type: 'SET_MONTHLY_MODE'; value: MonthlyMode }
+  | { type: 'SET_RANGE1'; value: DateRange }
+  | { type: 'SET_RANGE2'; value: DateRange }
+  | { type: 'SET_SIDE1'; value: SideSelection }
+  | { type: 'SET_SIDE2'; value: SideSelection };
+
 // Single source of truth for all step/mode/file/comparison transitions.
 // Previously these were 13 separate useStates whose resets had to be kept in
 // sync manually — easy to forget a field on a new transition.
-export function appReducer(state, action) {
+export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'SELECT_MODE':
       return { ...initialState, mode: action.mode, step: STEP_UPLOAD };

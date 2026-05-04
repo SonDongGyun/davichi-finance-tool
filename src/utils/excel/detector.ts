@@ -1,7 +1,7 @@
 import { COLUMN_KEYWORDS } from '../../constants/columnKeywords';
 import type { DetectedAmountColumns } from '../../types';
 
-function findByKeywords(headers: string[], keywords: string[]): string | null {
+function findByKeywords(headers: string[], keywords: readonly string[]): string | null {
   return (
     headers.find(h => {
       const lower = h.toLowerCase();

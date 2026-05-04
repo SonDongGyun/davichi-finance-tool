@@ -1,10 +1,11 @@
 import * as XLSX from 'xlsx';
 import { parseWorkbook } from '../utils/excel/parser';
+import type { ParsedFile } from '../types';
 
 // Sends the file as a raw binary body and the password in an X-Password header
 // (URL-encoded so non-ASCII passwords are header-safe). This avoids the
 // 1.33x base64 inflation that previously doubled memory usage on large files.
-export async function decryptAndParse(file, password) {
+export async function decryptAndParse(file: File, password: string): Promise<ParsedFile> {
   const arrayBuffer = await file.arrayBuffer();
 
   const res = await fetch('/api/decrypt', {
@@ -22,7 +23,7 @@ export async function decryptAndParse(file, password) {
   if (contentType.includes('application/json')) {
     let message = '복호화에 실패했습니다.';
     try {
-      const data = await res.json();
+      const data = await res.json() as { error?: string };
       if (data?.error) message = data.error;
     } catch {
       // Fall back to status-derived message below.

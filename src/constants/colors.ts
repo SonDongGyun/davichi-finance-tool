@@ -42,11 +42,19 @@ export const COLORS = {
   borderSlate: 'rgba(51,65,85,0.5)',
   borderSlateDim: 'rgba(51,65,85,0.3)',
   borderRow: 'rgba(30,41,59,0.5)',
-};
+} as const;
+
+export interface StatusColorScheme {
+  fg: string;
+  bg: string;
+  border: string;
+  soft: string;
+  softBorder: string;
+}
 
 // Status comparison colors — used by SummaryCards, AnalysisSummary,
 // DetailTable, VendorTable. Centralized so a status-color tweak hits one place.
-export const STATUS_COLORS = {
+export const STATUS_COLORS: Record<'new' | 'removed' | 'increased' | 'decreased' | 'unchanged', StatusColorScheme> = {
   new:        { fg: '#60a5fa', bg: 'rgba(59,130,246,0.12)', border: 'rgba(59,130,246,0.3)', soft: 'rgba(59,130,246,0.08)', softBorder: 'rgba(59,130,246,0.2)' },
   removed:    { fg: '#fb923c', bg: 'rgba(249,115,22,0.12)', border: 'rgba(249,115,22,0.3)', soft: 'rgba(249,115,22,0.08)', softBorder: 'rgba(249,115,22,0.2)' },
   increased:  { fg: '#f87171', bg: 'rgba(239,68,68,0.12)',  border: 'rgba(239,68,68,0.3)',  soft: 'rgba(239,68,68,0.08)',  softBorder: 'rgba(239,68,68,0.2)' },
@@ -67,4 +75,4 @@ export const GRADIENTS = {
   blueDeep:       'linear-gradient(135deg, #3b82f6, #2563eb)',
   slate:          'linear-gradient(135deg, #64748b, #475569)',
   primarySoft:    'linear-gradient(135deg, rgba(59,130,246,0.35), rgba(139,92,246,0.35))',
-};
+} as const;

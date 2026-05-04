@@ -1,13 +1,14 @@
+import type { CSSProperties } from 'react';
 import { COLORS, GRADIENTS } from '../constants/colors';
 
 // Default frosted card frame: pair with className="glass" or "glass-light".
 // Components compose it with extra props (textAlign, maxWidth) when needed.
-export const cardStyle = {
+export const cardStyle: CSSProperties = {
   borderRadius: '16px',
   padding: '32px',
 };
 
-export const selectStyle = {
+export const selectStyle: CSSProperties = {
   width: '100%',
   padding: '10px 14px',
   borderRadius: '8px',
@@ -20,7 +21,7 @@ export const selectStyle = {
   appearance: 'none',
 };
 
-export const labelStyle = {
+export const labelStyle: CSSProperties = {
   display: 'block',
   fontSize: '13px',
   color: COLORS.sub,
@@ -28,7 +29,7 @@ export const labelStyle = {
   fontWeight: 500,
 };
 
-export const thStyle = {
+export const thStyle: CSSProperties = {
   textAlign: 'left',
   padding: '14px 16px',
   fontSize: '12px',
@@ -40,12 +41,12 @@ export const thStyle = {
   userSelect: 'none',
 };
 
-export const tdStyle = {
+export const tdStyle: CSSProperties = {
   padding: '14px 16px',
   fontSize: '14px',
 };
 
-export const sectionTitleStyle = {
+export const sectionTitleStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '10px',
@@ -54,7 +55,7 @@ export const sectionTitleStyle = {
   color: COLORS.text,
 };
 
-export function btnPrimary(enabled) {
+export function btnPrimary(enabled: boolean): CSSProperties {
   return {
     width: '100%',
     padding: '12px',
@@ -72,7 +73,7 @@ export function btnPrimary(enabled) {
   };
 }
 
-export const btnSecondary = {
+export const btnSecondary: CSSProperties = {
   padding: '8px 16px',
   borderRadius: '8px',
   fontSize: '13px',
@@ -84,7 +85,7 @@ export const btnSecondary = {
 };
 
 // Pagination / list-action button (used by AnalysisSummary, VendorTable).
-export const listBtnStyle = {
+export const listBtnStyle: CSSProperties = {
   padding: '10px 16px',
   borderRadius: '8px',
   fontSize: '13px',

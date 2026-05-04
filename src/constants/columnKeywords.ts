@@ -14,4 +14,6 @@ export const COLUMN_KEYWORDS = {
   category:    ['계정', '과목', '항목', 'category', 'account', '비목'],
   description: ['적요', '내용', '설명', 'description', '비고', '메모'],
   vendor:      ['거래처', '업체', 'vendor', '상호', '공급자'],
-};
+} as const;
+
+export type ColumnKeywordKey = keyof typeof COLUMN_KEYWORDS;
