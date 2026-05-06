@@ -7,6 +7,7 @@ import CategoryTabs from './CategoryTabs';
 import StatusBadge from './StatusBadge';
 import SearchInput from './SearchInput';
 import StatusFilterBar, { type StatusFilterKey, type StatusFilterCounts } from './StatusFilterBar';
+import ExpandedDetailRow from './ExpandedDetailRow';
 import { cardStyle } from '../styles/common';
 import type { AnalysisResult } from '../types';
 
@@ -242,58 +243,13 @@ export default function VendorTable({ result }: VendorTableProps) {
                       </td>
                     </motion.tr>
                     {isExpanded && (
-                      <tr>
-                        <td colSpan={colSpan} style={{ padding: '16px 24px' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            {item.prevItems && item.prevItems.length > 0 && (
-                              <div style={{ background: 'rgba(15,23,42,0.5)', borderRadius: '12px', padding: '16px' }}>
-                                <p style={{ fontSize: '13px', fontWeight: 600, color: '#cbd5e1', marginBottom: '12px' }}>
-                                  {formatMonthLabel(result.month1.label)} 상세 ({item.prevItems.length}건)
-                                </p>
-                                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                  {item.prevItems.map((entry, j) => (
-                                    <div key={`prev-${j}-${entry._amount}`} style={{
-                                      display: 'flex', justifyContent: 'space-between',
-                                      fontSize: '12px', color: '#94a3b8', padding: '6px 0',
-                                      borderBottom: '1px solid rgba(51,65,85,0.3)',
-                                    }}>
-                                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                        {entry._description || '-'}
-                                      </span>
-                                      <span style={{ marginLeft: '16px', fontFamily: 'monospace', color: '#cbd5e1' }}>
-                                        {formatMoney(entry._amount)}원
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {item.currItems && item.currItems.length > 0 && (
-                              <div style={{ background: 'rgba(15,23,42,0.5)', borderRadius: '12px', padding: '16px' }}>
-                                <p style={{ fontSize: '13px', fontWeight: 600, color: '#cbd5e1', marginBottom: '12px' }}>
-                                  {formatMonthLabel(result.month2.label)} 상세 ({item.currItems.length}건)
-                                </p>
-                                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                  {item.currItems.map((entry, j) => (
-                                    <div key={`curr-${j}-${entry._amount}`} style={{
-                                      display: 'flex', justifyContent: 'space-between',
-                                      fontSize: '12px', color: '#94a3b8', padding: '6px 0',
-                                      borderBottom: '1px solid rgba(51,65,85,0.3)',
-                                    }}>
-                                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                        {entry._description || '-'}
-                                      </span>
-                                      <span style={{ marginLeft: '16px', fontFamily: 'monospace', color: '#cbd5e1' }}>
-                                        {formatMoney(entry._amount)}원
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
+                      <ExpandedDetailRow
+                        prevItems={item.prevItems ?? []}
+                        currItems={item.currItems ?? []}
+                        prevLabel={formatMonthLabel(result.month1.label)}
+                        currLabel={formatMonthLabel(result.month2.label)}
+                        colSpan={colSpan}
+                      />
                     )}
                   </React.Fragment>
                 );
