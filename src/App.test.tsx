@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
@@ -10,6 +10,12 @@ import App from './App';
 // AnimatePresence mode="wait" delays mounting the next view until exit
 // animations finish — use findBy* for cross-transition assertions.
 describe('App navigation', () => {
+  // App now hydrates from the URL on mount — reset between tests so a
+  // ?mode= left over from a prior test doesn't leak forward.
+  beforeEach(() => {
+    window.history.replaceState({}, '', '/');
+  });
+
   it('renders the landing page on initial mount', () => {
     render(<App />);
     expect(screen.getByText('어떤 방식으로 비교할까요?')).toBeInTheDocument();
@@ -42,5 +48,23 @@ describe('App navigation', () => {
     const backBtn = await screen.findByRole('button', { name: /모드 선택으로/ });
     await user.click(backBtn);
     expect(await screen.findByText('어떤 방식으로 비교할까요?')).toBeInTheDocument();
+  });
+
+  it('updates the URL when a mode is chosen and back when leaving', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByText('월별 비교'));
+    expect(window.location.search).toBe('?mode=monthly');
+
+    const backBtn = await screen.findByRole('button', { name: /모드 선택으로/ });
+    await user.click(backBtn);
+    expect(window.location.search).toBe('');
+  });
+
+  it('hydrates state from ?mode= in URL on mount', async () => {
+    window.history.replaceState({}, '', '/?mode=sheet');
+    render(<App />);
+    expect(await screen.findByText(/시트별 비교 모드/)).toBeInTheDocument();
+    expect(screen.queryByText('어떤 방식으로 비교할까요?')).not.toBeInTheDocument();
   });
 });

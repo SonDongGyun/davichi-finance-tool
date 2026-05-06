@@ -1,4 +1,4 @@
-import { useCallback, useReducer } from 'react';
+import { useCallback, useEffect, useReducer } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import Header from './components/Header';
@@ -42,11 +42,48 @@ function App() {
   } = state;
 
   const handleSelectMode = useCallback((m: AppMode) => {
+    // pushState before dispatch so user-initiated mode picks add a history
+    // entry — back button then returns to the landing page naturally.
+    if (typeof window !== 'undefined' && window.location.search !== `?mode=${m}`) {
+      window.history.pushState({}, '', `/?mode=${m}`);
+    }
     dispatch({ type: 'SELECT_MODE', mode: m });
   }, []);
 
   const handleBackToLanding = useCallback(() => {
+    if (typeof window !== 'undefined' && window.location.search !== '') {
+      window.history.pushState({}, '', '/');
+    }
     dispatch({ type: 'BACK_TO_LANDING' });
+  }, []);
+
+  // (1) Hydrate state from URL on mount: /?mode=monthly|sheet jumps straight
+  // into the upload step for that mode. Other paths fall through to landing.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const m = params.get('mode');
+    if (m === MODE_MONTHLY || m === MODE_SHEET) {
+      dispatch({ type: 'SELECT_MODE', mode: m });
+    }
+    // Run-once on mount; deliberately not reactive to URL changes.
+  }, []);
+
+  // (2) Sync browser back/forward to state. Listener is mounted once with no
+  // deps — it reads the current URL fresh on each pop, so no stale closure.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const m = params.get('mode');
+      if (m === MODE_MONTHLY || m === MODE_SHEET) {
+        dispatch({ type: 'SELECT_MODE', mode: m });
+      } else {
+        dispatch({ type: 'BACK_TO_LANDING' });
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   const handleFileLoaded = useCallback(async (file: File) => {
