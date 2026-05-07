@@ -1,4 +1,4 @@
-# 다비치 재무팀 분석 툴
+# 재무 분석 툴
 
 [![CI](https://github.com/SonDongGyun/davichi-finance-tool/actions/workflows/ci.yml/badge.svg)](https://github.com/SonDongGyun/davichi-finance-tool/actions/workflows/ci.yml)
 

@@ -388,7 +388,7 @@ function App() {
             textAlign: 'center', padding: '40px 0',
             fontSize: '14px', color: '#64748b',
           }}>
-            <p>다비치 재무팀 분석 툴 &copy; {new Date().getFullYear()}</p>
+            <p>재무 분석 툴 &copy; {new Date().getFullYear()}</p>
           </footer>
         </main>
       </div>

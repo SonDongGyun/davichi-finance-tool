@@ -31,7 +31,7 @@ export default function Header({ isCompact }: HeaderProps) {
               <BarChart3 style={{ width: '20px', height: '20px', color: 'white' }} />
             </div>
             <h1 style={{ fontSize: mobile ? '16px' : '20px', fontWeight: 700 }}>
-              <span className="gradient-text">다비치 재무팀 분석 툴</span>
+              <span className="gradient-text">재무 분석 툴</span>
             </h1>
           </div>
           {!mobile && (
@@ -100,7 +100,7 @@ export default function Header({ isCompact }: HeaderProps) {
             <BarChart3 style={{ width: mobile ? '24px' : '28px', height: mobile ? '24px' : '28px', color: 'white' }} />
           </div>
           <h1 style={{ fontSize: mobile ? '26px' : '40px', fontWeight: 800, lineHeight: 1.1 }}>
-            <span className="gradient-text">다비치 재무팀 분석 툴</span>
+            <span className="gradient-text">재무 분석 툴</span>
           </h1>
         </motion.div>
 

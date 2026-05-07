@@ -52,7 +52,7 @@ function addPageFooter(doc: jsPDF, pageNum: number, totalPages: number, m1: stri
   setFont(doc);
   doc.setFontSize(8);
   doc.setTextColor(160);
-  doc.text(`다비치 재무팀 분석 보고서  |  ${m1} vs ${m2}`, 14, ph - 8);
+  doc.text(`재무 분석 보고서  |  ${m1} vs ${m2}`, 14, ph - 8);
   doc.text(`${pageNum} / ${totalPages}`, pw - 14, ph - 8, { align: 'right' });
   doc.setDrawColor(200);
   doc.setLineWidth(0.3);
@@ -136,7 +136,7 @@ export async function exportPdf(result: AnalysisResult): Promise<void> {
 
   doc.setFontSize(10);
   doc.setTextColor(170, 185, 255);
-  doc.text(`작성일: ${today}  |  다비치 재무팀`, pw / 2, 48, { align: 'center' });
+  doc.text(`작성일: ${today}`, pw / 2, 48, { align: 'center' });
 
   // 요약 개요 박스
   let y = 70;

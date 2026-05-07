@@ -68,7 +68,6 @@ function buildCategorySummary(result: AnalysisResult): CategorySummaryItem[] {
 export async function exportPptx(result: AnalysisResult): Promise<void> {
   const pptx = new PptxGenJS();
   pptx.layout = 'LAYOUT_WIDE';
-  pptx.author = '다비치 재무팀';
   pptx.subject = '월별 비용 증감 분석';
 
   const m1 = formatMonthLabel(result.month1.label);
@@ -94,12 +93,8 @@ export async function exportPptx(result: AnalysisResult): Promise<void> {
 
   s1.addShape(pptx.ShapeType.rect, { x: 0.8, y: 3.4, w: 3.5, h: 0.06, fill: { color: BLUE } });
 
-  s1.addText('다비치 재무팀', {
-    x: 0.8, y: 3.8, w: 6, h: 0.4,
-    fontSize: 14, fontFace: FONT, color: SUB,
-  });
   s1.addText(today, {
-    x: 0.8, y: 4.2, w: 6, h: 0.35,
+    x: 0.8, y: 3.9, w: 6, h: 0.35,
     fontSize: 11, fontFace: FONT, color: DIM,
   });
 
@@ -292,7 +287,7 @@ export async function exportPptx(result: AnalysisResult): Promise<void> {
     x: 0, y: 2.5, w: 13.33, h: 1,
     fontSize: 36, fontFace: FONT, color: TEXT, bold: true, align: 'center',
   });
-  sEnd.addText('다비치 재무팀 분석 툴', {
+  sEnd.addText('재무 분석 툴', {
     x: 0, y: 3.5, w: 13.33, h: 0.5,
     fontSize: 14, fontFace: FONT, color: SUB, align: 'center',
   });
